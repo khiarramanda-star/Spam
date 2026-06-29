@@ -962,9 +962,9 @@ def run_infinite_loop():
                 
             log_info(f"Round {round_count} selesai. Sukses: {success_count}/{total_targets}")
             log_info(f"Total: success={total_success} | fail={total_fail}")
-            log_info("Menunggu 20 detik...")
+            log_info("Menunggu 5 detik...")
             
-            for _ in range(20):
+            for _ in range(5):
                 if stop_flag:
                     break
                 time.sleep(1)
