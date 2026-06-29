@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-# main_engine.py - OTP Spam Engine
+# spam_engine.py - OTP Spam Engine (Obfuscated - No Firebase)
 
 import time
 import random
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from colorama import Fore, Style
 
+# ==================== IMPORT OBFUSCATED ====================
+# Original: from handlers import get_all_handlers
 from handlers import get_all_handlers
-from db_cloud import AuthSystem
+
+# Original: from firebase import AuthSystem
+# Obfuscated: from db_cloud import UserManager
+from db_cloud import UserManager as AuthSystem
 
 # ==================== SPAM ENGINE ====================
 class SpamEngine:
@@ -74,7 +80,8 @@ class SpamEngine:
                 
                 self.total_count += 1
                 print(f"\r{icon} Round {counter} | Success: {self.success_count} | Failed: {self.fail_count} | Total: {self.total_count}", end='')
-                time.sleep(random.uniform(0.5, 1.5))
+                sys.stdout.flush()
+                time.sleep(random.uniform(0.3, 1.0))
         except KeyboardInterrupt:
             print(f"\n\n{Fore.CYAN}Stopped! Final stats:{Fore.RESET}")
             print(f"  {Fore.GREEN}Success: {self.success_count}{Fore.RESET}")
