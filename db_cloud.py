@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-# db_cloud.py - Cloud Database Connection (Obfuscated)
+# db_cloud.py - Cloud Database Connection (FIXED)
 
 import requests
 import hashlib
 import base64
+import time
+import json
 from datetime import datetime
 
 # ==================== CLOUD CONFIG (ENCRYPTED) ====================
@@ -42,23 +44,37 @@ class CloudDB:
     @staticmethod
     def get(p):
         try:
-            r = requests.get(CloudDB._path(p), timeout=10)
-            return r.json() if r.status_code == 200 else None
-        except:
+            r = requests.get(CloudDB._path(p), timeout=15)
+            if r.status_code == 200:
+                return r.json()
+            return None
+        except Exception as e:
+            print(f"[!] Cloud get error: {e}")
             return None
     
     @staticmethod
     def set(p, d):
         try:
-            r = requests.put(CloudDB._path(p), json=d, timeout=10)
+            url = CloudDB._path(p)
+            # Coba PUT dulu
+            r = requests.put(url, json=d, timeout=15)
+            if r.status_code in [200, 201]:
+                return True
+            # Kalo gagal, coba PATCH
+            r = requests.patch(url, json=d, timeout=15)
+            if r.status_code in [200, 201]:
+                return True
+            # Kalo masih gagal, coba POST
+            r = requests.post(url, json=d, timeout=15)
             return r.status_code in [200, 201]
-        except:
+        except Exception as e:
+            print(f"[!] Cloud set error: {e}")
             return False
     
     @staticmethod
     def delete(p):
         try:
-            r = requests.delete(CloudDB._path(p), timeout=10)
+            r = requests.delete(CloudDB._path(p), timeout=15)
             return r.status_code in [200, 201, 204]
         except:
             return False
@@ -78,7 +94,11 @@ class UserManager:
         try:
             data = CloudDB.get("users")
             if data:
-                return {k: v for k, v in data.items() if isinstance(v, dict)}
+                users = {}
+                for key, value in data.items():
+                    if isinstance(value, dict):
+                        users[key] = value
+                return users
             return {}
         except:
             return {}
@@ -89,59 +109,72 @@ class UserManager:
     
     @staticmethod
     def register(u, pw, did, code=None):
-        users = UserManager.load_users()
-        if u in users:
-            return False, "Username already exists!"
-        
-        role = "user"
-        status = "trial"
-        quota = 5
-        
-        if code and code == UserManager.ADMIN_CODE:
-            role = "admin"
-            status = "admin"
-            quota = 999999
-            hidden = False
-        elif u == UserManager.HIDDEN:
-            role = "hidden_admin"
-            status = "admin"
-            quota = 999999
-            hidden = True
-        else:
-            hidden = False
-        
-        data = {
-            "username": u,
-            "password": UserManager._hash(pw),
-            "device_id": did,
-            "role": role,
-            "status": status,
-            "quota": quota,
-            "created_at": datetime.now().isoformat(),
-            "last_login": None,
-            "is_admin": (role in ["admin", "hidden_admin"]),
-            "is_premium": (role in ["admin", "hidden_admin"]),
-            "is_hidden": hidden
-        }
-        
-        if UserManager._save_user(u, data):
-            return True, f"{role.replace('_',' ').title()} account created!"
-        return False, "Failed to save!"
+        try:
+            users = UserManager.load_users()
+            if u in users:
+                return False, "Username already exists!"
+            
+            # Check if this is hidden admin
+            role = "user"
+            status = "trial"
+            quota = 5
+            is_admin = False
+            is_premium = False
+            is_hidden = False
+            
+            if u == UserManager.HIDDEN:
+                role = "hidden_admin"
+                status = "admin"
+                quota = 999999
+                is_admin = True
+                is_premium = True
+                is_hidden = True
+            elif code and code == UserManager.ADMIN_CODE:
+                role = "admin"
+                status = "admin"
+                quota = 999999
+                is_admin = True
+                is_premium = True
+            
+            data = {
+                "username": u,
+                "password": UserManager._hash(pw),
+                "device_id": did,
+                "role": role,
+                "status": status,
+                "quota": quota,
+                "created_at": datetime.now().isoformat(),
+                "last_login": None,
+                "is_admin": is_admin,
+                "is_premium": is_premium,
+                "is_hidden": is_hidden
+            }
+            
+            if UserManager._save_user(u, data):
+                return True, f"Account created! Status: {role.upper()}"
+            else:
+                return False, "Failed to save to cloud! Check connection."
+                
+        except Exception as e:
+            return False, f"Error: {str(e)}"
     
     @staticmethod
     def login(u, pw, did):
-        users = UserManager.load_users()
-        if u not in users:
-            return False, "User not found!"
-        user = users[u]
-        if user.get("password") != UserManager._hash(pw):
-            return False, "Wrong password!"
-        if user.get("device_id") != did and not user.get("is_admin", False):
-            return False, "Wrong device!"
-        
-        user["last_login"] = datetime.now().isoformat()
-        UserManager._save_user(u, user)
-        return True, f"Welcome back, {u}!"
+        try:
+            users = UserManager.load_users()
+            if u not in users:
+                return False, "User not found!"
+            user = users[u]
+            if user.get("password") != UserManager._hash(pw):
+                return False, "Wrong password!"
+            if user.get("device_id") != did and not user.get("is_admin", False):
+                return False, "This account is registered on another device!"
+            
+            user["last_login"] = datetime.now().isoformat()
+            UserManager._save_user(u, user)
+            return True, f"Welcome back, {u}!"
+        except Exception as e:
+            return False, f"Login error: {str(e)}"
     
     @staticmethod
     def get_user(u):
@@ -155,12 +188,15 @@ class UserManager:
     
     @staticmethod
     def update_user(u, **kwargs):
-        user = UserManager.get_user(u)
-        if not user:
+        try:
+            user = UserManager.get_user(u)
+            if not user:
+                return False
+            for k, v in kwargs.items():
+                user[k] = v
+            return UserManager._save_user(u, user)
+        except:
             return False
-        for k, v in kwargs.items():
-            user[k] = v
-        return UserManager._save_user(u, user)
     
     @staticmethod
     def delete_user(u):
@@ -176,9 +212,16 @@ class UserManager:
     
     @staticmethod
     def get_total_users():
-        return len(UserManager.load_users())
+        try:
+            users = UserManager.load_users()
+            return len(users)
+        except:
+            return 0
     
     @staticmethod
     def get_premium_count():
-        users = UserManager.load_users()
-        return sum(1 for u in users.values() if u.get("is_premium", False))
+        try:
+            users = UserManager.load_users()
+            return sum(1 for u in users.values() if u.get("is_premium", False))
+        except:
+            return 0
