@@ -17,21 +17,6 @@ PROXY_SOURCES = [
     "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
     "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
 ]
-
-# ==================== DEFAULT PROXIES ====================
-DEFAULT_PROXIES = [
-    "http://103.175.42.147:80",
-    "http://103.175.42.157:80",
-    "http://103.175.42.155:80",
-    "http://103.146.145.142:8080",
-    "http://103.146.145.143:8080",
-    "http://103.158.188.12:8000",
-    "http://103.158.188.13:8000",
-    "http://103.158.188.14:8000",
-    "http://103.158.188.15:8000",
-    "http://103.158.188.16:8000",
-]
-
 # ==================== PROXY MANAGER ====================
 class ProxyManager:
     def __init__(self):
