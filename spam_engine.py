@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from colorama import Fore, Style
 
 from handlers import get_all_handlers
-from firebase import AuthSystem
+from db_cloud import AuthSystem
 
 # ==================== SPAM ENGINE ====================
 class SpamEngine:
