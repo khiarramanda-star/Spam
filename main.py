@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-# main.py - Spammer OTP WhatsApp (FULL DENGAN OPSI PROXY)
+# main.py - Spammer OTP WhatsApp (FULL DENGAN OPSI PROXY - FIXED)
 
 import sys
 import time
 import platform
 from datetime import datetime
-from colorama import Fore, Style
+from colorama import Fore, Style, init
+
+init(autoreset=True)
 
 from license import (
     clear_screen, log_info, log_success, log_warning, log_error, log_input, log_header,
@@ -133,8 +135,8 @@ def show_proxy_menu():
     print(f"{Fore.CYAN}║{Fore.WHITE}  ⚙️  PENGATURAN PROXY                              {Fore.CYAN}║")
     print(f"{Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
     print()
-    print(f"  {Fore.GREEN}[1]{Style.RESET_ALL} Pakai Proxy {Fore.DIM}(rotasi otomatis){Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}[2]{Style.RESET_ALL} Tanpa Proxy {Fore.DIM}(direct connection){Style.RESET_ALL}")
+    print(f"  {Fore.GREEN}[1]{Style.RESET_ALL} Pakai Proxy {Style.DIM}(rotasi otomatis){Style.RESET_ALL}")  # <--- FIX: Fore.DIM -> Style.DIM
+    print(f"  {Fore.GREEN}[2]{Style.RESET_ALL} Tanpa Proxy {Style.DIM}(direct connection){Style.RESET_ALL}")  # <--- FIX: Fore.DIM -> Style.DIM
     print()
     choice = log_input("Pilih opsi proxy (1/2): ").strip()
     if choice == "1":
