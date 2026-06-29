@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# main_engine.py - 109 API + Proxy/Direct (FULL)
+# main_engine.py - 109 API (NO FILTER, NO DELAY)
 
 import sys
 import time
@@ -20,7 +20,6 @@ init(autoreset=True)
 print_lock = threading.Lock()
 stop_flag = False
 
-# ==================== PROXY MANAGER ====================
 pm = get_proxy_manager()
 
 # ==================== API YANG BENERAN KIRIM OTP ====================
@@ -113,7 +112,6 @@ def run_handler(handler_name, handler_func, phone, idx, total, use_proxy):
     success = False
 
     try:
-        # Kalo pake proxy, ambil proxy
         if use_proxy:
             proxy = pm.get_proxy()
             proxy_dict = pm.get_proxy_dict(proxy)
@@ -123,7 +121,6 @@ def run_handler(handler_name, handler_func, phone, idx, total, use_proxy):
         
         resp = handler_func(phone)
         
-        # Reset proxy
         os.environ.pop('HTTP_PROXY', None)
         os.environ.pop('HTTPS_PROXY', None)
         
@@ -185,11 +182,10 @@ def run_handler(handler_name, handler_func, phone, idx, total, use_proxy):
     log_target(idx, total, name, status_text, detail)
     return success
 
-def run_single_round(phone, threads=1, use_proxy=True):
+def run_single_round(phone, threads=1, use_proxy=False):
     global stop_flag
     stop_flag = False
     
-    # Load proxy kalo pake
     if use_proxy:
         pm.load_proxies(force=True)
         pm.use_proxy = True
@@ -197,7 +193,6 @@ def run_single_round(phone, threads=1, use_proxy=True):
         pm.use_proxy = False
     
     stats = pm.get_stats()
-    
     handlers = get_all_handlers()
     total = len(handlers)
     
@@ -263,11 +258,10 @@ def run_single_round(phone, threads=1, use_proxy=True):
     
     return success_count > 0
 
-def run_infinite_loop(phone, use_proxy=True):
+def run_infinite_loop(phone, use_proxy=False):
     global stop_flag
     stop_flag = False
     
-    # Load proxy kalo pake
     if use_proxy:
         pm.load_proxies(force=True)
         pm.use_proxy = True
@@ -275,7 +269,6 @@ def run_infinite_loop(phone, use_proxy=True):
         pm.use_proxy = False
     
     stats = pm.get_stats()
-    
     handlers = get_all_handlers()
     total = len(handlers)
     
@@ -347,13 +340,7 @@ def run_infinite_loop(phone, use_proxy=True):
             log_info(f"Round {round_count} selesai. Sukses: {success_count}/{total}")
             log_info(f"Total: success={total_success} | fail={total_fail}")
             
-            # Refresh proxy setiap round
-            if use_proxy:
-                pm.load_proxies(force=True)
-                stats = pm.get_stats()
-                log_info(f"Proxy: {stats.get('total', 0)} available | {stats.get('failed', 0)} failed")
-            
-            time.sleep(2)
+            # TANPA DELAY - LANGSUNG LOOP LAGI
             
     except KeyboardInterrupt:
         pass
@@ -364,11 +351,10 @@ def run_infinite_loop(phone, use_proxy=True):
         log_warning("Proses dihentikan user!")
         log_info(f"Total success: {total_success} | fail: {total_fail}")
 
-def run_custom_thread(phone, threads=5, use_proxy=True):
+def run_custom_thread(phone, threads=5, use_proxy=False):
     global stop_flag
     stop_flag = False
     
-    # Load proxy kalo pake
     if use_proxy:
         pm.load_proxies(force=True)
         pm.use_proxy = True
@@ -376,7 +362,6 @@ def run_custom_thread(phone, threads=5, use_proxy=True):
         pm.use_proxy = False
     
     stats = pm.get_stats()
-    
     handlers = get_all_handlers()
     total = len(handlers)
     
