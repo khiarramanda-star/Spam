@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-# main_engine.py - 109 API + 500+ Proxy Auto-Rotate
+# main_engine.py - 109 API + 500+ Proxy (BANNER FIXED)
 
 import sys
 import time
 import random
 import threading
 import signal
-from colorama import Fore, Style
+import os
+from colorama import Fore, Style, init
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from license import log_info, log_success, log_warning, log_error, log_input, is_admin_number
 from utils import normalize
 from handlers import get_all_handlers
 from proxy_manager import get_proxy_manager
+
+init(autoreset=True)
 
 print_lock = threading.Lock()
 stop_flag = False
@@ -89,6 +92,15 @@ def get_detail_from_response(resp):
     
     return "OK"
 
+def print_banner(proxy_count, real_otp_count, failed_count):
+    """Print banner with stats"""
+    print(f"""
+{Fore.CYAN}╔═══════════════════════════════════════════════════════════╗
+{Fore.CYAN}║{Fore.WHITE}  🔥 OTP SPAMMER - 109 API + {Fore.GREEN}{proxy_count}{Fore.WHITE} PROXY{Fore.CYAN}          ║
+{Fore.CYAN}║{Style.DIM}  Real OTP: {Fore.GREEN}{real_otp_count}{Style.DIM} API | Failed: {Fore.RED}{failed_count}{Style.DIM}                 {Fore.CYAN}║
+{Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}
+""")
+
 def run_handler(handler_name, handler_func, phone, idx, total):
     global stop_flag
     if stop_flag:
@@ -100,28 +112,17 @@ def run_handler(handler_name, handler_func, phone, idx, total):
     success = False
 
     try:
-        # Proxy auto-rotate
         proxy = pm.get_proxy()
         proxy_dict = pm.get_proxy_dict(proxy)
         
-        # Set proxy di environment kalo perlu
         if proxy_dict:
-            original_proxies = {}
-            if 'http' in proxy_dict:
-                original_proxies['http'] = os.environ.get('HTTP_PROXY')
-                os.environ['HTTP_PROXY'] = proxy_dict['http']
-            if 'https' in proxy_dict:
-                original_proxies['https'] = os.environ.get('HTTPS_PROXY')
-                os.environ['HTTPS_PROXY'] = proxy_dict['https']
+            os.environ['HTTP_PROXY'] = proxy_dict.get('http', '')
+            os.environ['HTTPS_PROXY'] = proxy_dict.get('https', '')
         
         resp = handler_func(phone)
         
-        # Restore proxy
-        for k, v in original_proxies.items():
-            if v is None:
-                os.environ.pop(k.upper(), None)
-            else:
-                os.environ[k.upper()] = v
+        os.environ.pop('HTTP_PROXY', None)
+        os.environ.pop('HTTPS_PROXY', None)
         
         if resp is not None:
             if isinstance(resp, tuple):
@@ -188,19 +189,20 @@ def run_single_round(phone, threads=1):
     global stop_flag
     stop_flag = False
     
-    # Load proxies
+    # LOAD PROXY DULU
     pm.load_proxies(force=True)
     stats = pm.get_stats()
     
+    # PRINT BANNER SEBELUM APA PUN
+    print_banner(
+        proxy_count=stats.get('total', 0),
+        real_otp_count=len(REAL_OTP_APIS),
+        failed_count=stats.get('failed', 0)
+    )
+    print()
+    
     handlers = get_all_handlers()
     total = len(handlers)
-    
-    print()
-    print(f"{Fore.CYAN}╔═══════════════════════════════════════════════════════════╗")
-    print(f"{Fore.CYAN}║{Fore.WHITE}  🔥 OTP SPAMMER - 109 API + {stats['total']} PROXY{Fore.CYAN}          ║")
-    print(f"{Fore.CYAN}║{Fore.DIM}  Real OTP: {len(REAL_OTP_APIS)} API | Failed: {stats['failed']}{Fore.CYAN}                 ║")
-    print(f"{Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
-    print()
     
     target62 = normalize(phone)
     if not target62:
@@ -260,19 +262,20 @@ def run_infinite_loop(phone):
     global stop_flag
     stop_flag = False
     
-    # Load proxies
+    # LOAD PROXY DULU
     pm.load_proxies(force=True)
     stats = pm.get_stats()
     
+    # PRINT BANNER SEBELUM APA PUN
+    print_banner(
+        proxy_count=stats.get('total', 0),
+        real_otp_count=len(REAL_OTP_APIS),
+        failed_count=stats.get('failed', 0)
+    )
+    print()
+    
     handlers = get_all_handlers()
     total = len(handlers)
-    
-    print()
-    print(f"{Fore.CYAN}╔═══════════════════════════════════════════════════════════╗")
-    print(f"{Fore.CYAN}║{Fore.WHITE}  🔥 INFINITE LOOP - 109 API + {stats['total']} PROXY{Fore.CYAN}      ║")
-    print(f"{Fore.CYAN}║{Fore.DIM}  Real OTP: {len(REAL_OTP_APIS)} API | Failed: {stats['failed']}{Fore.CYAN}                 ║")
-    print(f"{Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
-    print()
     
     target62 = normalize(phone)
     if not target62:
@@ -305,7 +308,6 @@ def run_infinite_loop(phone):
             log_info(f"Round {round_count} dimulai...")
             success_count = 0
             
-            # Refresh proxy setiap round
             pm.load_proxies(force=True)
             stats = pm.get_stats()
             
@@ -337,9 +339,8 @@ def run_infinite_loop(phone):
             
             log_info(f"Round {round_count} selesai. Sukses: {success_count}/{total}")
             log_info(f"Total: success={total_success} | fail={total_fail}")
-            log_info(f"Proxy: {stats['total']} available | {stats['failed']} failed")
+            log_info(f"Proxy: {stats.get('total', 0)} available | {stats.get('failed', 0)} failed")
             
-            # Delay 2 detik biar gak ketahuan
             time.sleep(2)
             
     except KeyboardInterrupt:
@@ -349,25 +350,26 @@ def run_infinite_loop(phone):
     
     if stop_flag:
         log_warning("Proses dihentikan user!")
-        log_info(f"Total success: {total_success} | fail: {total_fail}")
+        log_info(f"Total success: {total_success} | fail={total_fail}")
 
 def run_custom_thread(phone, threads=5):
     global stop_flag
     stop_flag = False
     
-    # Load proxies
+    # LOAD PROXY DULU
     pm.load_proxies(force=True)
     stats = pm.get_stats()
     
+    # PRINT BANNER SEBELUM APA PUN
+    print_banner(
+        proxy_count=stats.get('total', 0),
+        real_otp_count=len(REAL_OTP_APIS),
+        failed_count=stats.get('failed', 0)
+    )
+    print()
+    
     handlers = get_all_handlers()
     total = len(handlers)
-    
-    print()
-    print(f"{Fore.CYAN}╔═══════════════════════════════════════════════════════════╗")
-    print(f"{Fore.CYAN}║{Fore.WHITE}  🔥 CUSTOM THREAD - 109 API + {stats['total']} PROXY{Fore.CYAN}       ║")
-    print(f"{Fore.CYAN}║{Fore.DIM}  Threads: {threads} | Real OTP: {len(REAL_OTP_APIS)} API{Fore.CYAN}            ║")
-    print(f"{Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
-    print()
     
     target62 = normalize(phone)
     if not target62:
