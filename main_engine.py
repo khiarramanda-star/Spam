@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# main_engine.py - 109 API + 500+ Proxy (BANNER FIXED)
+# main_engine.py - 109 API + Proxy/Direct (FULL)
 
 import sys
 import time
@@ -92,16 +92,17 @@ def get_detail_from_response(resp):
     
     return "OK"
 
-def print_banner(proxy_count, real_otp_count, failed_count):
-    """Print banner with stats"""
+def print_banner(proxy_count, real_otp_count, failed_count, use_proxy):
+    status = "✅ PROXY" if use_proxy else "⚡ DIRECT"
+    color = Fore.GREEN if use_proxy else Fore.CYAN
     print(f"""
 {Fore.CYAN}╔═══════════════════════════════════════════════════════════╗
 {Fore.CYAN}║{Fore.WHITE}  🔥 OTP SPAMMER - 109 API + {Fore.GREEN}{proxy_count}{Fore.WHITE} PROXY{Fore.CYAN}          ║
-{Fore.CYAN}║{Style.DIM}  Real OTP: {Fore.GREEN}{real_otp_count}{Style.DIM} API | Failed: {Fore.RED}{failed_count}{Style.DIM}                 {Fore.CYAN}║
+{Fore.CYAN}║{Style.DIM}  Real OTP: {Fore.GREEN}{real_otp_count}{Style.DIM} API | Mode: {color}{status}{Style.DIM}           {Fore.CYAN}║
 {Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}
 """)
 
-def run_handler(handler_name, handler_func, phone, idx, total):
+def run_handler(handler_name, handler_func, phone, idx, total, use_proxy):
     global stop_flag
     if stop_flag:
         return False
@@ -112,15 +113,17 @@ def run_handler(handler_name, handler_func, phone, idx, total):
     success = False
 
     try:
-        proxy = pm.get_proxy()
-        proxy_dict = pm.get_proxy_dict(proxy)
-        
-        if proxy_dict:
-            os.environ['HTTP_PROXY'] = proxy_dict.get('http', '')
-            os.environ['HTTPS_PROXY'] = proxy_dict.get('https', '')
+        # Kalo pake proxy, ambil proxy
+        if use_proxy:
+            proxy = pm.get_proxy()
+            proxy_dict = pm.get_proxy_dict(proxy)
+            if proxy_dict:
+                os.environ['HTTP_PROXY'] = proxy_dict.get('http', '')
+                os.environ['HTTPS_PROXY'] = proxy_dict.get('https', '')
         
         resp = handler_func(phone)
         
+        # Reset proxy
         os.environ.pop('HTTP_PROXY', None)
         os.environ.pop('HTTPS_PROXY', None)
         
@@ -136,73 +139,75 @@ def run_handler(handler_name, handler_func, phone, idx, total):
                     elif code == 429:
                         status_text = "LIMITED"
                         detail = "Rate limit"
-                        pm.mark_failed(proxy)
+                        if use_proxy: pm.mark_failed(proxy)
                     else:
                         detail = f"({code}) {str(msg)[:30] if msg else ''}"
-                        pm.mark_failed(proxy)
+                        if use_proxy: pm.mark_failed(proxy)
                 else:
                     status_text = "SUCCESS" if resp[0] else "FAIL"
                     success = True if resp[0] else False
-                    if not success:
-                        pm.mark_failed(proxy)
+                    if not success and use_proxy: pm.mark_failed(proxy)
             elif hasattr(resp, 'status_code'):
                 if resp.status_code < 400:
                     status_text = "SUCCESS"
                     detail = "OTP sent" if name in REAL_OTP_APIS else "HTTP OK"
                     success = True
-                    pm.mark_success(proxy)
+                    if use_proxy: pm.mark_success(proxy)
                 elif resp.status_code == 429:
                     status_text = "LIMITED"
                     detail = "Rate limit"
-                    pm.mark_failed(proxy)
+                    if use_proxy: pm.mark_failed(proxy)
                 elif resp.status_code == 403:
                     status_text = "BLOCKED"
                     detail = "Forbidden"
-                    pm.mark_failed(proxy)
+                    if use_proxy: pm.mark_failed(proxy)
                 else:
                     detail = f"({resp.status_code})"
-                    pm.mark_failed(proxy)
+                    if use_proxy: pm.mark_failed(proxy)
             elif isinstance(resp, bool):
                 status_text = "SUCCESS" if resp else "FAIL"
                 success = resp
-                if not success:
-                    pm.mark_failed(proxy)
+                if not success and use_proxy: pm.mark_failed(proxy)
             else:
                 status_text = "SUCCESS" if resp else "FAIL"
                 success = True if resp else False
-                if not success:
-                    pm.mark_failed(proxy)
+                if not success and use_proxy: pm.mark_failed(proxy)
         else:
             status_text = "ERROR"
             detail = "No response"
-            pm.mark_failed(proxy)
+            if use_proxy: pm.mark_failed(proxy)
             
     except Exception as e:
         status_text = "ERROR"
         detail = str(e)[:40]
-        pm.mark_failed(proxy)
+        if use_proxy: pm.mark_failed(proxy)
 
     log_target(idx, total, name, status_text, detail)
     return success
 
-def run_single_round(phone, threads=1):
+def run_single_round(phone, threads=1, use_proxy=True):
     global stop_flag
     stop_flag = False
     
-    # LOAD PROXY DULU
-    pm.load_proxies(force=True)
-    stats = pm.get_stats()
+    # Load proxy kalo pake
+    if use_proxy:
+        pm.load_proxies(force=True)
+        pm.use_proxy = True
+    else:
+        pm.use_proxy = False
     
-    # PRINT BANNER SEBELUM APA PUN
-    print_banner(
-        proxy_count=stats.get('total', 0),
-        real_otp_count=len(REAL_OTP_APIS),
-        failed_count=stats.get('failed', 0)
-    )
-    print()
+    stats = pm.get_stats()
     
     handlers = get_all_handlers()
     total = len(handlers)
+    
+    print_banner(
+        proxy_count=stats.get('total', 0),
+        real_otp_count=len(REAL_OTP_APIS),
+        failed_count=stats.get('failed', 0),
+        use_proxy=use_proxy
+    )
+    print()
     
     target62 = normalize(phone)
     if not target62:
@@ -233,7 +238,7 @@ def run_single_round(phone, threads=1):
                 if stop_flag:
                     break
                 idx += 1
-                futures.append(executor.submit(run_handler, name, func, target62, idx, total))
+                futures.append(executor.submit(run_handler, name, func, target62, idx, total, use_proxy))
             
             for future in as_completed(futures):
                 if stop_flag:
@@ -258,24 +263,29 @@ def run_single_round(phone, threads=1):
     
     return success_count > 0
 
-def run_infinite_loop(phone):
+def run_infinite_loop(phone, use_proxy=True):
     global stop_flag
     stop_flag = False
     
-    # LOAD PROXY DULU
-    pm.load_proxies(force=True)
-    stats = pm.get_stats()
+    # Load proxy kalo pake
+    if use_proxy:
+        pm.load_proxies(force=True)
+        pm.use_proxy = True
+    else:
+        pm.use_proxy = False
     
-    # PRINT BANNER SEBELUM APA PUN
-    print_banner(
-        proxy_count=stats.get('total', 0),
-        real_otp_count=len(REAL_OTP_APIS),
-        failed_count=stats.get('failed', 0)
-    )
-    print()
+    stats = pm.get_stats()
     
     handlers = get_all_handlers()
     total = len(handlers)
+    
+    print_banner(
+        proxy_count=stats.get('total', 0),
+        real_otp_count=len(REAL_OTP_APIS),
+        failed_count=stats.get('failed', 0),
+        use_proxy=use_proxy
+    )
+    print()
     
     target62 = normalize(phone)
     if not target62:
@@ -308,9 +318,6 @@ def run_infinite_loop(phone):
             log_info(f"Round {round_count} dimulai...")
             success_count = 0
             
-            pm.load_proxies(force=True)
-            stats = pm.get_stats()
-            
             with ThreadPoolExecutor(max_workers=3) as executor:
                 futures = []
                 idx = 0
@@ -318,7 +325,7 @@ def run_infinite_loop(phone):
                     if stop_flag:
                         break
                     idx += 1
-                    futures.append(executor.submit(run_handler, name, func, target62, idx, total))
+                    futures.append(executor.submit(run_handler, name, func, target62, idx, total, use_proxy))
                 
                 for future in as_completed(futures):
                     if stop_flag:
@@ -339,7 +346,12 @@ def run_infinite_loop(phone):
             
             log_info(f"Round {round_count} selesai. Sukses: {success_count}/{total}")
             log_info(f"Total: success={total_success} | fail={total_fail}")
-            log_info(f"Proxy: {stats.get('total', 0)} available | {stats.get('failed', 0)} failed")
+            
+            # Refresh proxy setiap round
+            if use_proxy:
+                pm.load_proxies(force=True)
+                stats = pm.get_stats()
+                log_info(f"Proxy: {stats.get('total', 0)} available | {stats.get('failed', 0)} failed")
             
             time.sleep(2)
             
@@ -350,26 +362,31 @@ def run_infinite_loop(phone):
     
     if stop_flag:
         log_warning("Proses dihentikan user!")
-        log_info(f"Total success: {total_success} | fail={total_fail}")
+        log_info(f"Total success: {total_success} | fail: {total_fail}")
 
-def run_custom_thread(phone, threads=5):
+def run_custom_thread(phone, threads=5, use_proxy=True):
     global stop_flag
     stop_flag = False
     
-    # LOAD PROXY DULU
-    pm.load_proxies(force=True)
-    stats = pm.get_stats()
+    # Load proxy kalo pake
+    if use_proxy:
+        pm.load_proxies(force=True)
+        pm.use_proxy = True
+    else:
+        pm.use_proxy = False
     
-    # PRINT BANNER SEBELUM APA PUN
-    print_banner(
-        proxy_count=stats.get('total', 0),
-        real_otp_count=len(REAL_OTP_APIS),
-        failed_count=stats.get('failed', 0)
-    )
-    print()
+    stats = pm.get_stats()
     
     handlers = get_all_handlers()
     total = len(handlers)
+    
+    print_banner(
+        proxy_count=stats.get('total', 0),
+        real_otp_count=len(REAL_OTP_APIS),
+        failed_count=stats.get('failed', 0),
+        use_proxy=use_proxy
+    )
+    print()
     
     target62 = normalize(phone)
     if not target62:
@@ -400,7 +417,7 @@ def run_custom_thread(phone, threads=5):
                 if stop_flag:
                     break
                 idx += 1
-                futures.append(executor.submit(run_handler, name, func, target62, idx, total))
+                futures.append(executor.submit(run_handler, name, func, target62, idx, total, use_proxy))
             
             for future in as_completed(futures):
                 if stop_flag:
