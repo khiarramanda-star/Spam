@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# db_cloud.py - Cloud Database Connection (FIXED)
+# db_cloud.py - Cloud Database Connection (FIXED URL)
 
 import requests
 import hashlib
@@ -8,29 +8,15 @@ import time
 import json
 from datetime import datetime
 
-# ==================== CLOUD CONFIG (ENCRYPTED) ====================
+# ==================== CLOUD CONFIG (LANGSUNG) ====================
 class CloudConfig:
-    _ENC = {
-        "key": "b3RUMFdJUmt6WEJNeUtZMXlGQVhQaXQyMGhrOUhMc1l6YUlB==",
-        "url": "b3RtLm9lY2FpcmVmLmItZHQtZmF1bHQtMTQ4ODMtZXNhYi8vOnB0dGg=",
-        "pid": "MTQ4ODMtZXNhYg==",
-        "aid": "NjoyNjI3ZTdlZTZlZWM0ZTQyOTQ4Nzo1NTg4OTUzODgxNzg6MQ=="
-    }
-    
-    @staticmethod
-    def _d(e):
-        try:
-            return base64.b64decode(e).decode()[::-1]
-        except:
-            return e
-    
     @staticmethod
     def get():
         return {
-            "key": CloudConfig._d(CloudConfig._ENC["key"]),
-            "url": CloudConfig._d(CloudConfig._ENC["url"]),
-            "pid": CloudConfig._d(CloudConfig._ENC["pid"]),
-            "aid": CloudConfig._d(CloudConfig._ENC["aid"])
+            "key": "AIzaSyDLHk9h02tiPAFXy1YKIbMXuHZkRIwGtTo",
+            "url": "https://base-38841-default-rtdb.firebaseio.com",
+            "pid": "base-38841",
+            "aid": "1:878559883155:android:784ba9264e18eece7e8266"
         }
 
 # ==================== CLOUD DB ====================
@@ -44,9 +30,12 @@ class CloudDB:
     @staticmethod
     def get(p):
         try:
-            r = requests.get(CloudDB._path(p), timeout=15)
+            url = CloudDB._path(p)
+            print(f"[DEBUG] GET: {url}")  # Debug
+            r = requests.get(url, timeout=15)
             if r.status_code == 200:
                 return r.json()
+            print(f"[!] Cloud get error: {r.status_code} - {r.text[:100]}")
             return None
         except Exception as e:
             print(f"[!] Cloud get error: {e}")
@@ -56,17 +45,12 @@ class CloudDB:
     def set(p, d):
         try:
             url = CloudDB._path(p)
-            # Coba PUT dulu
+            print(f"[DEBUG] SET: {url}")  # Debug
             r = requests.put(url, json=d, timeout=15)
             if r.status_code in [200, 201]:
                 return True
-            # Kalo gagal, coba PATCH
-            r = requests.patch(url, json=d, timeout=15)
-            if r.status_code in [200, 201]:
-                return True
-            # Kalo masih gagal, coba POST
-            r = requests.post(url, json=d, timeout=15)
-            return r.status_code in [200, 201]
+            print(f"[!] Cloud set error: {r.status_code} - {r.text[:100]}")
+            return False
         except Exception as e:
             print(f"[!] Cloud set error: {e}")
             return False
@@ -74,7 +58,8 @@ class CloudDB:
     @staticmethod
     def delete(p):
         try:
-            r = requests.delete(CloudDB._path(p), timeout=15)
+            url = CloudDB._path(p)
+            r = requests.delete(url, timeout=15)
             return r.status_code in [200, 201, 204]
         except:
             return False
@@ -114,7 +99,6 @@ class UserManager:
             if u in users:
                 return False, "Username already exists!"
             
-            # Check if this is hidden admin
             role = "user"
             status = "trial"
             quota = 5
@@ -225,3 +209,12 @@ class UserManager:
             return sum(1 for u in users.values() if u.get("is_premium", False))
         except:
             return 0
+
+# ==================== TEST ====================
+if __name__ == "__main__":
+    print("Testing Cloud Connection...")
+    print(f"URL: {CloudDB.BASE}")
+    users = UserManager.load_users()
+    print(f"Users loaded: {len(users)}")
+    if users:
+        print("Users:", list(users.keys()))
