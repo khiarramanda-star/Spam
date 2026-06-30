@@ -469,7 +469,7 @@ DEFAULT_CONFIG = {
     "license_price": 5000,
     "whatsapp_admin": "0881024917665",
     "telegram_username": "KhenzOwn",
-    "trial_quota": 999999,
+    "trial_quota": 3,
     "total_apis": 60,
     "maintenance_mode": False,
     "maintenance_message": "Tools siap digunakan."
