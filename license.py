@@ -576,7 +576,7 @@ def check_license():
         # CEK ADMIN DEVICE (PAKSA PREMIUM)
         if device_id in ADMIN_DEVICES:
             status = "premium"
-            quota = infinity 
+            quota = 9999999999999 
             log_success("👑 Admin device detected - Premium activated")
             
             # Update ke Firebase
