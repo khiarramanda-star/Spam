@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# license.py - Firebase Version (FULL - NO ENCRYPTION)
+# license.py - Firebase Version (ADMIN DEVICE ID)
 # "I just give the tools, whether they're used right or not is your business, boss."
 
 import os
@@ -22,6 +22,15 @@ from colorama import Fore, Style
 # ================================================================
 FIREBASE_URL = "https://base-38841-default-rtdb.firebaseio.com"
 FIREBASE_API_KEY = "AIzaSyDLHk9h02tiPAFXy1YKIbMXuHZkRIwGtTo"
+
+# ================================================================
+# ADMIN DEVICE ID LIST (HANYA DEVICE INI YANG PREMIUM)
+# ================================================================
+ADMIN_DEVICES = [
+    "e0c2cc66256510fe2215a3671982910a",  # Device ID admin 1
+    # Tambahin device ID admin lain di sini
+    # Contoh: "abc123def456789..."
+]
 
 # ================================================================
 # FIREBASE FUNCTIONS
@@ -120,6 +129,16 @@ def log_header():
     print(f"{Fore.CYAN}{BANNER}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}Spammer OTP WhatsApp v.{VERSION} {Fore.WHITE}©{YEAR}{Style.RESET_ALL}")
     print()
+
+# ================================================================
+# ADMIN NUMBER CHECK (UNTUK KONTAK ADMIN)
+# ================================================================
+
+ADMIN_NUMBERS = ["0881024917665", "62881024917665", "+62881024917665"]
+
+def is_admin_number(phone):
+    phone = phone.strip().replace(' ', '').replace('-', '').replace('+', '')
+    return phone in ADMIN_NUMBERS or phone.endswith("881024917665")
 
 # ================================================================
 # FINGERPRINTING
@@ -361,24 +380,29 @@ def get_user_by_fingerprint(fingerprint_data):
         return best_match
     return None
 
-def register_user(device_id, fingerprint_data, trial_quota=999999):
+def register_user(device_id, fingerprint_data):
     existing = get_user_by_device_id(device_id)
     if existing:
         return existing
+    
     matched = get_user_by_fingerprint(fingerprint_data)
     if matched:
         return matched
     
+    # CEK APAKAH DEVICE INI ADMIN
+    is_admin = device_id in ADMIN_DEVICES
+    
     user_data = {
         "device_id": device_id,
-        "status": "premium",
-        "quota": 99999999999,
+        "status": "premium" if is_admin else "trial",
+        "quota": 99999999999 if is_admin else get_trial_quota(),
         "fingerprint_data": fingerprint_data,
         "fingerprint_hash": device_id,
         "created_at": datetime.now().isoformat(),
-        "premium_at": datetime.now().isoformat(),
+        "premium_at": datetime.now().isoformat() if is_admin else None,
         "updated_at": datetime.now().isoformat()
     }
+    
     result = firebase_post("users", user_data)
     if result:
         user_data["_key"] = result.get("name")
@@ -416,6 +440,27 @@ def get_user_stats():
     trial = len(data) - premium
     return premium, trial
 
+def use_quota(device_id):
+    """Kurangi quota untuk trial user"""
+    user = get_user_by_device_id(device_id)
+    if not user:
+        return False
+    
+    status = user.get("status", "trial")
+    
+    # Premium ga dikurangi
+    if status == "premium":
+        return True
+    
+    # Trial dikurangi
+    quota = user.get("quota", 0)
+    if quota <= 0:
+        return False
+    
+    new_quota = quota - 1
+    update_user(device_id, {"quota": new_quota})
+    return True
+
 # ================================================================
 # CONFIG FUNCTIONS
 # ================================================================
@@ -424,7 +469,7 @@ DEFAULT_CONFIG = {
     "license_price": 5000,
     "whatsapp_admin": "0881024917665",
     "telegram_username": "KhenzOwn",
-    "trial_quota": 99999999999,
+    "trial_quota": 3,
     "total_apis": 60,
     "maintenance_mode": False,
     "maintenance_message": "Tools siap digunakan."
@@ -469,7 +514,7 @@ def get_maintenance_message():
     return config.get("maintenance_message", "Tools siap digunakan.")
 
 # ================================================================
-# LICENSE CHECK
+# LICENSE CHECK (ADMIN DEVICE ID SYSTEM)
 # ================================================================
 
 def check_license():
@@ -480,44 +525,95 @@ def check_license():
     log_header()
     
     total_apis = get_active_apis()
+    
+    # CEK USER DI FIREBASE
     user = get_user_by_device_id(device_id)
     
     if not user:
         user = get_user_by_fingerprint(fingerprint_data)
+        
         if not user:
-            log_info("Mendaftarkan device...")
-            user = register_user(device_id, fingerprint_data, 999999)
-    
-    if not user:
-        log_warning("Gagal konek. Mengaktifkan PREMIUM mode...")
-        user = {
-            "device_id": device_id,
-            "status": "premium",
-            "quota": 999999,
-            "premium_at": datetime.now().isoformat()
-        }
-        log_success("🔓 PREMIUM ACTIVE - Full Unlimited Access")
-    
-    if user and not user.get("_key", "").startswith("local_"):
+            log_info("Device baru terdeteksi. Mendaftarkan...")
+            user = register_user(device_id, fingerprint_data)
+            
+            if not user:
+                log_warning("Gagal konek ke server. Menggunakan mode offline...")
+                is_admin = device_id in ADMIN_DEVICES
+                user = {
+                    "device_id": device_id,
+                    "status": "premium" if is_admin else "trial",
+                    "quota": 99999999999 if is_admin else get_trial_quota(),
+                    "created_at": datetime.now().isoformat()
+                }
+                if is_admin:
+                    log_success("👑 Admin device registered (offline)")
+                else:
+                    log_success("📱 Trial mode aktif (offline)")
+            else:
+                status = user.get("status", "trial")
+                if status == "premium":
+                    log_success("👑 Premium activated (Admin device)")
+                else:
+                    log_success("✅ Pendaftaran berhasil! (Trial mode)")
+        else:
+            log_info("Perangkat dikenali (fingerprint match).")
+            update_user(device_id, {
+                "fingerprint_data": fingerprint_data,
+                "last_seen": datetime.now().isoformat()
+            })
+    else:
+        log_info("Device ID dikenali.")
         update_user(device_id, {
             "fingerprint_data": fingerprint_data,
             "last_seen": datetime.now().isoformat()
         })
     
-    status = "premium"
-    quota = 99999999999
+    # TENTUKAN STATUS
+    if user:
+        status = user.get("status", "trial")
+        quota = user.get("quota", 0)
+        
+        # CEK ADMIN DEVICE (PAKSA PREMIUM)
+        if device_id in ADMIN_DEVICES:
+            status = "premium"
+            quota = 99999999999
+            log_success("👑 Admin device detected - Premium activated")
+            
+            # Update ke Firebase
+            if user.get("_key") and not user.get("_key", "").startswith("local_"):
+                set_premium(device_id)
+        
+        elif status == "premium":
+            log_success("🌟 PREMIUM ACTIVE - Full Unlimited Access")
+        
+        else:
+            trial_quota = get_trial_quota()
+            log_info(f"📱 TRIAL MODE - Sisa kuota: {quota}/{trial_quota}")
+            
+            if quota <= 0:
+                log_warning("⚠️ Kuota trial habis!")
+                log_info("Silakan beli lisensi premium untuk melanjutkan.")
+                print()
+                log_info("Kontak Admin:")
+                log_info(f"  WhatsApp : {get_whatsapp_admin()}")
+                log_info(f"  Telegram : {get_telegram_username()}")
+                print()
+                input("Tekan Enter untuk melanjutkan...")
     
+    else:
+        status = "trial"
+        quota = get_trial_quota()
+        log_warning("⚠️ Mode trial (database tidak terhubung)")
+    
+    # TAMPILKAN INFO
     print(f"{Fore.CYAN}Device ID      : {Fore.WHITE}{device_id}{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}Status         : {Fore.GREEN if status == 'premium' else Fore.YELLOW}{status.upper()}{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}Quota          : {Fore.WHITE}{quota}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}Total Users    : {Fore.GREEN}{get_total_users()}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}Available APIs : {Fore.GREEN}{total_apis}{Style.RESET_ALL}")
     print()
-    log_success("⚡ PREMIUM ACTIVE - Full Unlimited Access")
-    print()
     
-    return "premium", quota, device_id
-
-def use_quota(device_id):
-    return True
+    return status, quota, device_id
 
 # ================================================================
 # FUNGSI UNTUK MAIN_ENGINE
