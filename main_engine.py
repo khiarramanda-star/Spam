@@ -20,15 +20,6 @@ from license import (
 )
 from utils import normalize, fmt_08, fmt_nocode, fmt_plus, fmt_phone_only, get_public_ip, generate_multipart, extract_csrf, get_random_user_agent, get_headers_with_random_ua
 from handlers import (
-    send_tuneup_otp, send_hashmicro_otp, send_internetrakyat_otp,
-    send_ultramilk_register, send_kaniva_otp, send_jembatani_otp,
-    send_rcx_otp, send_sahabatteknisi_otp, send_auto2000_otp,
-    send_astra_daihatsu_otp, send_royal_canin_otp, send_watsons_otp,
-    send_99co_otp, send_belirumah_otp, send_fastwork_otp,
-    send_hrsbre_otp, send_erafone_otp, send_beautyhaul_otp,
-    send_hainaya_otp, send_minumyukkaka_otp, send_sidemang_otp,
-    send_lapormasbup_otp, send_ptsp_kemenag_otp, send_planetban_otp
-)
 from targets import TARGETS
 
 print_lock = threading.Lock()
