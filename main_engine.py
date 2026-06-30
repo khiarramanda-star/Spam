@@ -92,11 +92,11 @@ def get_detail_from_response(resp):
     return "OK"
 
 def print_banner(proxy_count, real_otp_count, failed_count, use_proxy):
-    status = "✅ PROXY" if use_proxy else "⚡ DIRECT"
+    status = "PROXY" if use_proxy else "DIRECT"
     color = Fore.GREEN if use_proxy else Fore.CYAN
     print(f"""
 {Fore.CYAN}╔═══════════════════════════════════════════════════════════╗
-{Fore.CYAN}║{Fore.WHITE}  🔥 OTP SPAMMER - 109 API + {Fore.GREEN}{proxy_count}{Fore.WHITE} PROXY{Fore.CYAN}          ║
+{Fore.CYAN}║{Fore.WHITE}  OTP SPAMMER - 100 API+ {Fore.GREEN}{proxy_count}{Fore.WHITE} PROXY{Fore.CYAN}          ║
 {Fore.CYAN}║{Style.DIM}  Real OTP: {Fore.GREEN}{real_otp_count}{Style.DIM} API | Mode: {color}{status}{Style.DIM}           {Fore.CYAN}║
 {Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}
 """)
