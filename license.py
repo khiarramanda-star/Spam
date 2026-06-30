@@ -395,7 +395,7 @@ def register_user(device_id, fingerprint_data):
     user_data = {
         "device_id": device_id,
         "status": "premium" if is_admin else "trial",
-        "quota": infinity if is_admin else get_trial_quota(),
+        "quota": 9999999999999 if is_admin else get_trial_quota(),
         "fingerprint_data": fingerprint_data,
         "fingerprint_hash": device_id,
         "created_at": datetime.now().isoformat(),
@@ -542,7 +542,7 @@ def check_license():
                 user = {
                     "device_id": device_id,
                     "status": "premium" if is_admin else "trial",
-                    "quota": infinity if is_admin else get_trial_quota(),
+                    "quota": 9999999999999 if is_admin else get_trial_quota(),
                     "created_at": datetime.now().isoformat()
                 }
                 if is_admin:
