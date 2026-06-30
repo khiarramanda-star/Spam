@@ -12,10 +12,6 @@ import string
 from datetime import datetime
 from colorama import Fore, Style
 
-# ==================== SUPABASE CONFIG (HARDCODE) ====================
-SUPABASE_URL = "https://wrarikomspvbmsigtasi.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyYXJpa29tc3B2Ym1zaWd0YXNpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjMxMzc0NCwiZXhwIjoyMDk3ODg5NzQ0fQ.IpmLPFb-YQJbXj49czsZTou2k3PCMRjNPNR1HmAQ-sU"
-
 # ==================== TABLES ====================
 TABLE_USERS = "users"
 TABLE_CONFIG = "config"
@@ -28,7 +24,7 @@ DEFAULT_CONFIG = {
     "whatsapp_admin": "0881024917665",
     "telegram_username": "KhenzOwn",
     "trial_quota": 99999999999,
-    "total_apis": 60+,
+    "total_apis": 60,
     "maintenance_mode": False,
     "maintenance_message": "Tools sedang dalam pemeliharaan. Mohon tunggu hingga selesai."
 }
@@ -324,41 +320,6 @@ def get_device_id():
 
     fp = get_full_fingerprint()
     hardware_id = calculate_fingerprint_hash(fp)
-    SALT = "KRONOS_PERMANENT_2026"
-    raw = f"{hardware_id}_{SALT}"
-    device_id = hashlib.sha256(raw.encode()).hexdigest()[:32]
-    write_device_id_to_all_locations(device_id)
-    return device_id
-
-# ==================== SUPABASE ====================
-def supabase_request(method, endpoint, data=None):
-    url = f"{SUPABASE_URL}/rest/v1/{endpoint}"
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json",
-        "Prefer": "return=representation"
-    }
-
-    try:
-        if method.upper() == "GET":
-            resp = requests.get(url, headers=headers, timeout=5)
-        elif method.upper() == "POST":
-            resp = requests.post(url, headers=headers, json=data, timeout=5)
-        elif method.upper() == "PATCH":
-            resp = requests.patch(url, headers=headers, json=data, timeout=5)
-        elif method.upper() == "DELETE":
-            resp = requests.delete(url, headers=headers, timeout=5)
-        else:
-            return None
-
-        if resp.status_code in [200, 201, 204]:
-            if resp.text:
-                return resp.json()
-            return True
-        return None
-    except Exception as e:
-        return None
 
 # ==================== CONFIG ====================
 def get_config():
