@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# main.py - Spammer OTP WhatsApp (FULL)
+# main.py - Spammer OTP WhatsApp (OTP ONLY)
 # "I just give the tools, whether they're used right or not is your business, boss."
 
 import sys
@@ -44,10 +44,6 @@ def show_buy_guide():
     print(f"{Fore.CYAN}Keuntungan Premium:{Style.RESET_ALL}")
     print(f"  {Fore.GREEN}•{Style.RESET_ALL} Akses FULL semua API ({get_active_apis()} API)")
     print(f"  {Fore.GREEN}•{Style.RESET_ALL} Unlimited penggunaan")
-    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam Call{Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam SMS{Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam WA Code{Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}•{Style.RESET_ALL} {Fore.YELLOW}Spam Panggilan WA{Style.RESET_ALL}")
     print()
     print(f"{Fore.CYAN}Kontak Admin:{Style.RESET_ALL}")
     print(f"  WhatsApp : {Fore.GREEN}{get_whatsapp_admin()}{Style.RESET_ALL}")
@@ -76,25 +72,9 @@ def show_menu(status, quota, device_id):
     print(f"{Fore.GREEN}[2]{Style.RESET_ALL} Infinite Loop")
     print(f"{Fore.GREEN}[3]{Style.RESET_ALL} Custom Thread")
     print()
-    
-    if status == "premium":
-        print(f"{Fore.YELLOW}PREMIUM FEATURES{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}[4]{Style.RESET_ALL} {Fore.YELLOW}Spam Call{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}[5]{Style.RESET_ALL} {Fore.YELLOW}Spam SMS{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}[6]{Style.RESET_ALL} {Fore.YELLOW}Spam WA Code{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}[C]{Style.RESET_ALL} {Fore.YELLOW}📞 Spam Panggilan WA{Style.RESET_ALL}")
-        print()
-        print(f"{Fore.GREEN}[0]{Style.RESET_ALL} {Fore.RED}Spam All{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}[I]{Style.RESET_ALL} {Fore.RED}♾️ Spam All Infinity{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}[S]{Style.RESET_ALL} {Fore.RED}🔥 Spam All Direct{Style.RESET_ALL}")
-        print()
-        print(f"{Fore.GREEN}[K]{Style.RESET_ALL} {Fore.RED}💬 Spam Kode WA Infinity{Style.RESET_ALL}")
-        print()
-    
     print(f"{Fore.CYAN}TOOLS{Style.RESET_ALL}")
     print(f"{Fore.GREEN}[9]{Style.RESET_ALL} {Fore.MAGENTA}Buat API Baru{Style.RESET_ALL}")
     print()
-    
     print(f"{Fore.CYAN}LAINNYA{Style.RESET_ALL}")
     if status != "premium":
         print(f"{Fore.GREEN}[4]{Style.RESET_ALL} Beli Premium")
@@ -123,164 +103,13 @@ def show_thread_menu():
     return log_input("Pilih (1-10, Enter=5): ").strip() or "5"
 
 # ================================================================
-# SPAM FUNCTIONS
-# ================================================================
-
-def spam_call_number(phone):
-    try:
-        from handlers import spam_call_all
-        success = spam_call_all(phone)
-        log_success(f"Call: {success} method(s)")
-    except Exception as e:
-        log_error(f"Error: {e}")
-
-def spam_sms_number(phone):
-    try:
-        from handlers import spam_sms_all
-        success = spam_sms_all(phone)
-        log_success(f"SMS: {success} method(s)")
-    except Exception as e:
-        log_error(f"Error: {e}")
-
-def spam_wa_code_number(phone):
-    try:
-        from handlers import spam_wa_code_all
-        success = spam_wa_code_all(phone)
-        log_success(f"WA Code: {success} method(s)")
-    except Exception as e:
-        log_error(f"Error: {e}")
-
-def spam_wa_call(phone):
-    try:
-        from handlers import spam_wa_call_all
-        success = spam_wa_call_all(phone)
-        log_success(f"WA Call: {success} method(s)")
-    except Exception as e:
-        log_error(f"Error: {e}")
-
-def spam_all(phone):
-    print()
-    log_info(f"Menjalankan SPAM ALL ke {phone}...")
-    print()
-    
-    log_info("1. OTP Spam...")
-    try:
-        from main_engine import run_single_round
-        run_single_round(threads=5)
-    except Exception as e:
-        log_error(f"OTP error: {e}")
-    
-    print()
-    
-    log_info("2. Spam Call...")
-    spam_call_number(phone)
-    
-    print()
-    
-    log_info("3. Spam SMS...")
-    spam_sms_number(phone)
-    
-    print()
-    
-    log_info("4. Spam WA Code...")
-    spam_wa_code_number(phone)
-    
-    print()
-    
-    log_info("5. Spam Panggilan WA...")
-    spam_wa_call(phone)
-    
-    print()
-    log_success("SPAM ALL SELESAI!")
-
-def spam_all_infinity():
-    clear_screen()
-    print()
-    print(f"{Fore.RED}SPAM ALL INFINITY{Style.RESET_ALL}")
-    print(f"{Fore.YELLOW}Jalan terus sampai di-stop (Ctrl+C){Style.RESET_ALL}")
-    print()
-    
-    phone = log_input("Nomor target (08xx): ").strip()
-    if not phone:
-        log_error("Nomor tidak boleh kosong!")
-        return
-    
-    phone = fmt_08(phone)
-    print()
-    log_info(f"Target: {phone}")
-    log_info("Memulai SPAM ALL INFINITY...")
-    log_info("Tekan Ctrl+C untuk berhenti")
-    print()
-    
-    round_num = 1
-    try:
-        while True:
-            print()
-            log_info(f"Round {round_num} dimulai...")
-            spam_all(phone)
-            log_info(f"Round {round_num} selesai. Menunggu 10 detik...")
-            for _ in range(10):
-                time.sleep(1)
-            round_num += 1
-    except KeyboardInterrupt:
-        print()
-        log_warning("SPAM ALL INFINITY dihentikan!")
-        log_info(f"Total round: {round_num-1}")
-
-def spam_all_direct():
-    clear_screen()
-    print()
-    print(f"{Fore.RED}SPAM ALL DIRECT{Style.RESET_ALL}")
-    print()
-    
-    phone = log_input("Nomor target (08xx): ").strip()
-    if not phone:
-        log_error("Nomor tidak boleh kosong!")
-        return
-    
-    phone = fmt_08(phone)
-    spam_all(phone)
-    print()
-    input("Tekan Enter untuk kembali...")
-
-def spam_wa_code_infinity():
-    clear_screen()
-    print()
-    print(f"{Fore.RED}SPAM KODE WA INFINITY{Style.RESET_ALL}")
-    print()
-    
-    phone = log_input("Nomor target (08xx): ").strip()
-    if not phone:
-        log_error("Nomor tidak boleh kosong!")
-        return
-    
-    phone = fmt_08(phone)
-    print()
-    log_info(f"Target: {phone}")
-    log_info("Memulai SPAM KODE WA INFINITY...")
-    log_info("Tekan Ctrl+C untuk berhenti")
-    print()
-    
-    count = 0
-    try:
-        while True:
-            count += 1
-            log_info(f"Round {count}...")
-            spam_wa_code_number(phone)
-            time.sleep(3)
-    except KeyboardInterrupt:
-        print()
-        log_warning("SPAM KODE WA dihentikan!")
-        log_info(f"Total round: {count}")
-
-# ================================================================
-# BUAT API BARU (MANUAL)
+# BUAT API BARU
 # ================================================================
 
 def buat_api_baru():
     clear_screen()
     print()
-    print(f"{Fore.MAGENTA}BUAT API OTP BARU (MANUAL){Style.RESET_ALL}")
+    print(f"{Fore.MAGENTA}BUAT API OTP BARU{Style.RESET_ALL}")
     print()
     print(f"{Fore.CYAN}Masukkan detail API baru:{Style.RESET_ALL}")
     print()
@@ -460,49 +289,9 @@ def main():
         choice = log_input("Pilih menu: ").strip()
         
         # ========================================
-        # SPAM ALL
-        # ========================================
-        if choice == "0" and status == "premium":
-            phone = log_input("Nomor target (08xx): ").strip()
-            if phone:
-                phone = fmt_08(phone)
-                spam_all(phone)
-            input("\nTekan Enter untuk kembali...")
-        
-        # ========================================
-        # SPAM ALL INFINITY
-        # ========================================
-        elif choice.upper() == "I" and status == "premium":
-            spam_all_infinity()
-            input("\nTekan Enter untuk kembali...")
-        
-        # ========================================
-        # SPAM ALL DIRECT
-        # ========================================
-        elif choice.upper() == "S" and status == "premium":
-            spam_all_direct()
-        
-        # ========================================
-        # SPAM KODE WA INFINITY
-        # ========================================
-        elif choice.upper() == "K" and status == "premium":
-            spam_wa_code_infinity()
-            input("\nTekan Enter untuk kembali...")
-        
-        # ========================================
-        # SPAM PANGGILAN WA
-        # ========================================
-        elif choice.upper() == "C" and status == "premium":
-            phone = log_input("Nomor target (08xx): ").strip()
-            if phone:
-                phone = fmt_08(phone)
-                spam_wa_call(phone)
-            input("\nTekan Enter untuk kembali...")
-        
-        # ========================================
         # MENU 1: SINGLE ROUND
         # ========================================
-        elif choice == "1":
+        if choice == "1":
             if status == "trial" and quota <= 0:
                 log_warning("Kuota trial habis!")
                 input("Tekan Enter...")
@@ -558,7 +347,7 @@ def main():
                 threads = int(log_input("Jumlah thread (default 5): ").strip() or "5")
                 if threads < 1: threads = 1
             except:
-                threads = 1000
+                threads = 5
             
             from main_engine import run_single_round
             run_single_round(threads=threads)
@@ -569,26 +358,6 @@ def main():
                     quota = user.get("quota", 0)
                     log_info(f"Sisa kuota: {quota}")
             
-            input("\nTekan Enter untuk kembali...")
-        
-        # ========================================
-        # MENU 4: SPAM CALL (PREMIUM ONLY)
-        # ========================================
-        elif choice == "4" and status == "premium":
-            phone = log_input("Nomor target (08xx): ").strip()
-            if phone:
-                phone = fmt_08(phone)
-                spam_call_number(phone)
-            input("\nTekan Enter untuk kembali...")
-        
-        # ========================================
-        # MENU 5: SPAM SMS (PREMIUM ONLY)
-        # ========================================
-        elif choice == "5" and status == "premium":
-            phone = log_input("Nomor target (08xx): ").strip()
-            if phone:
-                phone = fmt_08(phone)
-                spam_sms_number(phone)
             input("\nTekan Enter untuk kembali...")
         
         # ========================================
