@@ -196,7 +196,7 @@ def spam_all(phone):
 def spam_all_infinity():
     clear_screen()
     print()
-    print(f"{Fore.RED}♾️ SPAM ALL INFINITY{Style.RESET_ALL}")
+    print(f"{Fore.RED}SPAM ALL INFINITY{Style.RESET_ALL}")
     print(f"{Fore.YELLOW}Jalan terus sampai di-stop (Ctrl+C){Style.RESET_ALL}")
     print()
     
@@ -230,7 +230,7 @@ def spam_all_infinity():
 def spam_all_direct():
     clear_screen()
     print()
-    print(f"{Fore.RED}🔥 SPAM ALL DIRECT{Style.RESET_ALL}")
+    print(f"{Fore.RED}SPAM ALL DIRECT{Style.RESET_ALL}")
     print()
     
     phone = log_input("Nomor target (08xx): ").strip()
@@ -246,7 +246,7 @@ def spam_all_direct():
 def spam_wa_code_infinity():
     clear_screen()
     print()
-    print(f"{Fore.RED}💬 SPAM KODE WA INFINITY{Style.RESET_ALL}")
+    print(f"{Fore.RED}SPAM KODE WA INFINITY{Style.RESET_ALL}")
     print()
     
     phone = log_input("Nomor target (08xx): ").strip()
@@ -558,7 +558,7 @@ def main():
                 threads = int(log_input("Jumlah thread (default 5): ").strip() or "5")
                 if threads < 1: threads = 1
             except:
-                threads = 5
+                threads = 1000
             
             from main_engine import run_single_round
             run_single_round(threads=threads)
@@ -589,16 +589,6 @@ def main():
             if phone:
                 phone = fmt_08(phone)
                 spam_sms_number(phone)
-            input("\nTekan Enter untuk kembali...")
-        
-        # ========================================
-        # MENU 6: SPAM WA CODE (PREMIUM ONLY)
-        # ========================================
-        elif choice == "6" and status == "premium":
-            phone = log_input("Nomor target (08xx): ").strip()
-            if phone:
-                phone = fmt_08(phone)
-                spam_wa_code_number(phone)
             input("\nTekan Enter untuk kembali...")
         
         # ========================================
