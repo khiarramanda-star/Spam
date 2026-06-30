@@ -556,5 +556,5 @@ def get_login_handlers():
 # ================================================================
 
 if __name__ == "__main__":
-    print("🔐 License module loaded ")
+    print("🔐 License module loaded")
     check_license()
