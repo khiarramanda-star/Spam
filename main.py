@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-# main.py - Spammer OTP WhatsApp (FULL DENGAN OPSI PROXY - FIXED)
+# main.py - Spammer OTP WhatsApp
 
 import sys
 import time
 import platform
 from datetime import datetime
-from colorama import Fore, Style, init
-from main_engine import run_infinite_loop
-init(autoreset=True)
+from colorama import Fore, Style
 
 from license import (
     clear_screen, log_info, log_success, log_warning, log_error, log_input, log_header,
@@ -95,7 +93,7 @@ def check_update():
     print(f"{Fore.CYAN}CEK UPDATE & KETERSEDIAAN API{Style.RESET_ALL}")
     print()
     current_version = VERSION
-    latest_version = "1"
+    latest_version = "3.1.1"
     if current_version == latest_version:
         log_success(f"Tools versi {current_version} adalah versi terbaru.")
     else:
@@ -127,25 +125,6 @@ def show_thread_menu():
     print()
     return log_input("Pilih thread (1-10, enter untuk default 1): ").strip()
 
-def show_proxy_menu():
-    """Menu pilihan proxy"""
-    clear_screen()
-    log_header()
-    print(f"{Fore.CYAN}╔═══════════════════════════════════════════════════════════╗")
-    print(f"{Fore.CYAN}║{Fore.WHITE}  ⚙️  PENGATURAN PROXY                              {Fore.CYAN}║")
-    print(f"{Fore.CYAN}╚═══════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
-    print()
-    print(f"  {Fore.GREEN}[1]{Style.RESET_ALL} Pakai Proxy {Style.DIM}(rotasi otomatis){Style.RESET_ALL}")  # <--- FIX: Fore.DIM -> Style.DIM
-    print(f"  {Fore.GREEN}[2]{Style.RESET_ALL} Tanpa Proxy {Style.DIM}(direct connection){Style.RESET_ALL}")  # <--- FIX: Fore.DIM -> Style.DIM
-    print()
-    choice = log_input("Pilih opsi proxy (1/2): ").strip()
-    if choice == "1":
-        log_success("✅ Menggunakan PROXY")
-        return True
-    else:
-        log_success("✅ Menggunakan DIRECT CONNECTION (tanpa proxy)")
-        return False
-
 def main():
     status, quota, device_id = check_license()
     
@@ -168,7 +147,7 @@ def main():
             if choice == "1":
                 if quota <= 0:
                     log_warning("Kuota trial habis!")
-                    log_info("Silakan beli premium untuk melanjutkan.")
+                    log_info("Silakan beli lisensi premium untuk melanjutkan.")
                     print()
                     input("Tekan Enter untuk melihat panduan pembelian...")
                     show_buy_guide()
@@ -177,16 +156,8 @@ def main():
                         quota = user.get("quota", 0)
                     continue
                 
-                # Opsi proxy
-                use_proxy = show_proxy_menu()
-                
-                phone = log_input("Nomor target (08xx / +62xx): ").strip()
-                if not phone:
-                    log_error("Nomor tidak boleh kosong!")
-                    continue
-                
                 from main_engine import run_single_round
-                success = run_single_round(phone, threads=1, use_proxy=use_proxy)
+                success = run_single_round(threads=1)
                 
                 if use_quota(device_id):
                     user = check_user(device_id)
@@ -197,7 +168,7 @@ def main():
                     log_error("Gagal mengurangi kuota!")
                 
                 if quota == 0:
-                    log_info("Maaf kuota Anda telah habis.")
+                    log_info("Kuota Anda telah habis.")
                     print()
                     input("Tekan Enter untuk melihat panduan pembelian...")
                     show_buy_guide()
@@ -232,21 +203,13 @@ def main():
             show_user_stats()
             print()
             print(f"{Fore.GREEN}Premium Active - Full Access{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}Terima kasih sudah membeli premium!{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}Terima kasih sudah membeli lisensi premium!{Style.RESET_ALL}")
             print()
             show_menu_premium()
             
             choice = log_input("Pilih menu (1/2/3): ").strip()
             
             if choice == "1":
-                # Opsi proxy
-                use_proxy = show_proxy_menu()
-                
-                phone = log_input("Nomor target (08xx / +62xx): ").strip()
-                if not phone:
-                    log_error("Nomor tidak boleh kosong!")
-                    continue
-                
                 thread_choice = show_thread_menu()
                 try:
                     threads = int(thread_choice) if thread_choice.strip() else 1
@@ -255,21 +218,13 @@ def main():
                 except:
                     threads = 1
                 from main_engine import run_single_round
-                run_single_round(phone, threads=threads, use_proxy=use_proxy)
+                run_single_round(threads=threads)
                 log_info("Tekan Enter untuk kembali ke menu...")
                 input()
             
             elif choice == "2":
-                # Opsi proxy
-                use_proxy = show_proxy_menu()
-                
-                phone = log_input("Nomor target (08xx / +62xx): ").strip()
-                if not phone:
-                    log_error("Nomor tidak boleh kosong!")
-                    continue
-                
                 from main_engine import run_infinite_loop
-                run_infinite_loop(phone, use_proxy=use_proxy)
+                run_infinite_loop()
                 log_info("Tekan Enter untuk kembali ke menu...")
                 input()
             
